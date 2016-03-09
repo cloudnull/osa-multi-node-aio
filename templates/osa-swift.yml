@@ -1,0 +1,48 @@
+---
+global_overrides:
+  swift:
+    part_power: 8
+    storage_network: 'br-storage'
+    replication_network: 'br-storage'
+    drives:
+      - name: disk1
+      - name: disk2
+      - name: disk3
+    mount_point: /srv
+    storage_policies:
+      - policy:
+          name: default
+          index: 0
+          default: True
+swift-proxy_hosts:
+  swift1:
+    ip: 172.29.236.106
+    container_vars:
+      swift_proxy_vars:
+        limit_container_types: swift_proxy
+        read_affinity: "r1=100"
+        write_affinity: "r1"
+        write_affinity_node_count: "1 * replicas"
+  swift2:
+    ip: 172.29.236.107
+    container_vars:
+      swift_proxy_vars:
+        limit_container_types: swift_proxy
+        read_affinity: "r1=100"
+        write_affinity: "r1"
+        write_affinity_node_count: "1 * replicas"
+swift_hosts:
+  swift1:
+    ip: 10.0.0.106
+    container_vars:
+      swift_vars:
+        limit_container_types: swift
+        zone: 0
+        region: 1
+  swift2:
+    ip: 10.0.0.107
+    container_vars:
+      swift_vars:
+        limit_container_types: swift
+        zone: 0
+        region: 1

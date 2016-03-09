@@ -1,0 +1,145 @@
+---
+cidr_networks:
+  container: 172.29.236.0/22
+  tunnel: 172.29.240.0/22
+  storage: 172.29.244.0/22
+
+used_ips:
+  - "172.29.236.100,172.29.236.108"
+  - "172.29.240.100,172.29.240.108"
+  - "172.29.244.100,172.29.244.108"
+  - "172.29.248.100,172.29.248.108"
+  - "172.29.236.200"
+  - "172.29.240.200"
+  - "172.29.244.200"
+  - "172.29.248.200"
+
+global_overrides:
+  internal_lb_vip_address: 172.29.236.200
+  # The external IP is quoted simply to ensure that the .aio file can be used as input
+  # dynamic inventory testing.
+  external_lb_vip_address: "__HOSTIP__"
+  tunnel_bridge: "br-vxlan"
+  management_bridge: "br-mgmt"
+  provider_networks:
+    - network:
+        container_bridge: "br-mgmt"
+        container_type: "veth"
+        container_interface: "eth1"
+        ip_from_q: "container"
+        type: "raw"
+        group_binds:
+          - all_containers
+          - hosts
+        is_container_address: true
+        is_ssh_address: true
+    - network:
+        container_bridge: "br-vxlan"
+        container_type: "veth"
+        container_interface: "eth10"
+        ip_from_q: "tunnel"
+        type: "vxlan"
+        range: "1:1000"
+        net_name: "vxlan"
+        group_binds:
+          - neutron_linuxbridge_agent
+    - network:
+        container_bridge: "br-vlan"
+        container_type: "veth"
+        container_interface: "eth12"
+        host_bind_override: "eth12"
+        type: "flat"
+        net_name: "flat"
+        group_binds:
+          - neutron_linuxbridge_agent
+    - network:
+        container_bridge: "br-vlan"
+        container_type: "veth"
+        container_interface: "eth11"
+        type: "vlan"
+        range: "1:1"
+        net_name: "vlan"
+        group_binds:
+          - neutron_linuxbridge_agent
+    - network:
+        container_bridge: "br-storage"
+        container_type: "veth"
+        container_interface: "eth2"
+        ip_from_q: "storage"
+        type: "raw"
+        group_binds:
+          - glance_api
+          - cinder_api
+          - cinder_volume
+          - nova_compute
+          - swift_proxy
+
+shared-infra_hosts:
+  infra1:
+    ip: 172.29.236.100
+  infra2:
+    ip: 172.29.236.101
+  infra3:
+    ip: 172.29.236.102
+
+os-infra_hosts:
+  infra1:
+    ip: 172.29.236.100
+  infra2:
+    ip: 172.29.236.101
+  infra3:
+    ip: 172.29.236.102
+
+storage-infra_hosts:
+  storage1:
+    ip: 172.29.236.108
+
+repo-infra_hosts:
+  infra1:
+    ip: 172.29.236.100
+  infra2:
+    ip: 172.29.236.101
+  infra3:
+    ip: 172.29.236.102
+
+identity_hosts:
+  infra1:
+    ip: 172.29.236.100
+  infra2:
+    ip: 172.29.236.101
+  infra3:
+    ip: 172.29.236.102
+
+compute_hosts:
+  compute1:
+    ip: 172.29.236.104
+  compute2:
+    ip: 172.29.236.105
+
+storage_hosts:
+  storage1:
+    ip: 172.29.236.108
+    container_vars:
+      cinder_backends:
+        limit_container_types: cinder_volume
+        lvm:
+          volume_group: cinder-volumes
+          volume_driver: cinder.volume.drivers.lvm.LVMVolumeDriver
+          volume_backend_name: LVM_iSCSI
+          iscsi_ip_address: "172.29.236.108"
+
+log_hosts:
+  logging1:
+    ip: 172.29.236.103
+
+network_hosts:
+  infra1:
+    ip: 172.29.236.100
+  infra2:
+    ip: 172.29.236.101
+  infra3:
+    ip: 172.29.236.102
+
+haproxy_hosts:
+  loadbalancer1:
+    ip: 172.29.236.200
