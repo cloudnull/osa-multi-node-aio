@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# If you were running ssh-agent with forwarding this will clear out the keys
+#  in your cache which can cause confusion.
+killall ssh-agent; eval `ssh-agent`
+
 if [ ! -f "/root/.ssh/id_rsa" ];then
   ssh-keygen -t rsa -N ''
 fi
@@ -147,9 +151,9 @@ cobbler import --name=ubuntu-14.04.4-server-amd64 --path=/mnt/iso
 umount /mnt/iso
 
 cobbler profile add \
---name ubuntu-14.04.4-server-unattended \
---distro ubuntu-14.04.4-server-x86_64 \
---kickstart /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
+  --name ubuntu-14.04.4-server-unattended \
+  --distro ubuntu-14.04.4-server-x86_64 \
+  --kickstart /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
 
 # sync cobbler
 cobbler sync
@@ -227,11 +231,11 @@ fi
 umount /deleteme || true
 echo y | lvremove  /dev/lxc/deleteme00 || true
 sed -i 's/^\/dev\/mapper\/lxc-deleteme00.*//g' /etc/fstab
-shutdown -r now
+for i in br-dhcp br-mgmt br-vlan br-storage br-vxlan; do
+  ifup $i;
+done
 EOF
 done
-
-wait_ssh
 
 # Infra storage setup
 for node in 10.0.0.100 10.0.0.101 10.0.0.102; do
@@ -282,26 +286,42 @@ vgcreate cinder-volumes /dev/lxc/cinder
 EOF
 done
 
+# Deploy OpenStack-Ansible source code
 apt-get install -y git tmux
 pushd /opt
   git clone https://github.com/openstack/openstack-ansible
   cp -R openstack-ansible/etc/openstack_deploy /etc/openstack_deploy
 popd
 
+# Create the swift config
 cp templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
 
+# Create the OpenStack User Config
 HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
 sed "s/__HOSTIP__/${HOSTIP}/g" templates/openstack_user_config.yml > /etc/openstack_deploy/openstack_user_config.yml
 
 pushd /opt/openstack-ansible/
-bash ./scripts/bootstrap-ansible.sh
-python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
-# This is happening so the VMs running the infra use less storage
-echo 'lxc_container_backing_store: dir' | tee -a /etc/openstack_deploy/user_variables.yml
+  bash ./scripts/bootstrap-ansible.sh
+  python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
+  # This is happening so the VMs running the infra use less storage
+  echo 'lxc_container_backing_store: dir' | tee -a /etc/openstack_deploy/user_variables.yml
+  # Tempest is being configured to use a known network
+  echo 'tempest_public_subnet_cidr: 172.29.248.0/22' | tee -a /etc/openstack_deploy/user_variables.yml
+  # This makes running neutron in a distributed system easier and a lot less noisy
+  echo 'neutron_l2_population: True' | tee -a /etc/openstack_deploy/user_variables.yml
 popd
 
 pushd /opt/openstack-ansible/playbooks
 # Running the HAP play is done because it "may" be needed. Note: In Master its not.
 openstack-ansible haproxy-install.yml
+
+# Setup everything else
 openstack-ansible setup-everything.yml
+
+# This is optional and only being done to give the cloud networks and an image.
+#  The tempest install will work out of the box because the deployment is setup
+#  already with all of the correct networks, devices, and other bits. If you want
+#  to test with tempest the OSA script will work out the box. Post deployment you
+#  can test with the following: `cd /opt/openstack-ansible; ./scripts/run-tempest.sh`
+openstack-ansible os-tempest-install.yml
 popd
