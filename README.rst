@@ -16,9 +16,10 @@ and deploy OpenStack using KVM, Cobbler, OpenStack-Ansible within 9 Nodes
 and 1 load balancer all using a Hyper Converged environment.
 
 
-This script assumes that the environment is a using the following details:
-  FLAVOR: onmetal-io1
-  IMAGE: OnMetal - Ubuntu 14.04 LTS (Trusty Tahr)
+This script assumes that the environment is a using the following details  
+
+  * FLAVOR: onmetal-io1
+  * IMAGE: OnMetal - Ubuntu 14.04 LTS (Trusty Tahr)
 
 
 Once deployed you can use virt-manager to manage the KVM instances on the host, similar to a drac or ilo.
@@ -34,3 +35,13 @@ OSX:
 WINDOWS:
     If you're running Windows, you can install virt-viewer from the KVM Download site.
     https://virt-manager.org/download/
+
+
+Notes
+-----
+
+The cobbler and pre-seed setup has been implemented using some of the awesome work originally created by James Thorne
+
+  * cobbler installation post - https://thornelabs.net/2015/11/26/install-and-configure-cobbler-on-ubuntu-1404.html
+  * pre-seeds -- https://github.com/jameswthorne/preseeds-rpc
+
