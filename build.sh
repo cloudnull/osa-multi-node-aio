@@ -264,12 +264,12 @@ fi
 umount /deleteme || true
 echo y | lvremove  /dev/lxc/deleteme00 || true
 sed -i 's/^\/dev\/mapper\/lxc-deleteme00.*//g' /etc/fstab
-for i in br-mgmt br-vlan br-storage br-vxlan; do
-  ifup \$i;
-  echo "\$i done"
-done
+shutdown -r now
 EOF
 done
+
+# Wait here for all nodes to be booted and ready with SSH
+wait_ssh
 
 # Infra storage setup
 for node in $(get_host_type infra); do
