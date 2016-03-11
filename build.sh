@@ -228,6 +228,10 @@ done
 # sync cobbler
 cobbler sync
 
+# Restart XinetD
+service xinetd stop
+service xinetd start
+
 # Create the libvirt networks used for the Host VMs
 for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   if ! virsh net-list |  grep -qw "${network}"; then
