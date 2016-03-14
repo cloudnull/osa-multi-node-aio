@@ -15,7 +15,7 @@
         "swift1": "106",
         "swift2": "107"
     },
-    "storage": {
-        "storage1": "108"
+    "cinder": {
+        "cinder1": "108"
     }
 }

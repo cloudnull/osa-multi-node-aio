@@ -129,11 +129,13 @@ SSHKEY=$(cat /root/.ssh/id_rsa.pub)
 # This is set to instruct the preseed what the default network is expected to be
 DEFAULT_NETWORK="eth0"
 
-#  when templated replace \$ with $ and \\ with \
-cp templates/ubuntu-server-14.04-unattended-cobbler.seed /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
-sed -i "s/__DEVICE_NAME__/${DEVICE_NAME}/g" /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
-sed -i "s|__SSHKEY__|${SSHKEY}|g" /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
-sed -i "s/__DEFAULT_NETWORK__/${DEFAULT_NETWORK}/g" /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
+# Template the seed files
+for seed_file in templates/pre-seeds/*.seed; do
+  cp "${seed_file}" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  sed -i "s/__DEVICE_NAME__/${DEVICE_NAME}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  sed -i "s|__SSHKEY__|${SSHKEY}|g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  sed -i "s/__DEFAULT_NETWORK__/${DEFAULT_NETWORK}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+done
 
 # Restart services again and configure autostart
 service cobblerd restart
@@ -157,15 +159,17 @@ if ! cobbler distro list | grep -qw "ubuntu-14.04.4-server-x86_64"; then
 fi
 
 # Create cobbler profile
-if ! cobbler profile list | grep -qw "ubuntu-14.04.4-server-unattended"; then
-  cobbler profile add \
-    --name ubuntu-14.04.4-server-unattended \
-    --distro ubuntu-14.04.4-server-x86_64 \
-    --kickstart /var/lib/cobbler/kickstarts/ubuntu-server-14.04-unattended-cobbler.seed
+for seed_file in /var/lib/cobbler/kickstarts/ubuntu*14.04*.seed; do
+  if ! cobbler profile list | grep -qw "${seed_file#*'/'}"; then
+    cobbler profile add \
+      --name "${seed_file#*'/'}" \
+      --distro ubuntu-14.04.4-server-x86_64 \
+      --kickstart "${seed_file}"
+  fi
+done
 
-  # sync cobbler
-  cobbler sync
-fi
+# sync cobbler
+cobbler sync
 
 # Get Loaders
 cobbler get-loaders
@@ -195,6 +199,16 @@ for i in x.values():
 EOL
 }
 
+function get_all_types () {
+python <<EOL
+import json
+with open('hosts.json') as f:
+    x = json.loads(f.read())
+for i in x.keys():
+    print(i)
+EOL
+}
+
 function wait_ssh() {
 echo "Waiting for all nodes to become available. This can take around 10 min"
 for node in $(get_all_hosts); do
@@ -207,22 +221,24 @@ for node in $(get_all_hosts); do
 done
 }
 
-# Create the cobbler systems
-for node in $(get_all_hosts); do
-  if ! cobbler system list | grep -qw "${node%%":"*}"; then
-    cobbler system add \
-      --name=${node%%":"*} \
-      --profile=ubuntu-14.04.4-server-unattended \
-      --hostname=${node%%":"*}.openstackci.local \
-      --kopts="interface=${DEFAULT_NETWORK}" \
-      --interface=${DEFAULT_NETWORK} \
-      --mac="52:54:00:bd:81:${node:(-2)}" \
-      --ip-address="10.0.0.${node#*":"}" \
-      --subnet=255.255.255.0 \
-      --gateway=10.0.0.200 \
-      --name-servers=8.8.8.8 8.8.4.4 \
-      --static=1
-  fi
+# Create cobbler systems
+for node_type in $(get_all_types); do
+  for node in $(get_host_type ${node_type}); do
+    if ! cobbler system list | grep -qw "${node%%":"*}"; then
+      cobbler system add \
+        --name="${node%%':'*}" \
+        --profile="ubuntu-server-14.04-unattended-cobbler-${node_type}.seed" \
+        --hostname=${node%%":"*}.openstackci.local \
+        --kopts="interface=${DEFAULT_NETWORK}" \
+        --interface=${DEFAULT_NETWORK} \
+        --mac="52:54:00:bd:81:${node:(-2)}" \
+        --ip-address="10.0.0.${node#*":"}" \
+        --subnet=255.255.255.0 \
+        --gateway=10.0.0.200 \
+        --name-servers=8.8.8.8 8.8.4.4 \
+        --static=1
+    fi
+  done
 done
 
 # sync cobbler
@@ -263,11 +279,8 @@ for node in $(get_all_hosts); do
 scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
 ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
 if ! grep "^source.*cfg$" /etc/network/interfaces; then
-echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
+  echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
 fi
-umount /deleteme || true
-echo y | lvremove  /dev/lxc/deleteme00 || true
-sed -i 's/^\/dev\/mapper\/lxc-deleteme00.*//g' /etc/fstab
 shutdown -r now
 EOF
 done
@@ -275,90 +288,5 @@ done
 # Wait here for all nodes to be booted and ready with SSH
 wait_ssh
 
-# Infra storage setup
-for node in $(get_host_type infra); do
-ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
-umount /var/lib/nova
-echo y | lvremove  /dev/lxc/nova00 || true
-sed -i 's/^\/dev\/mapper\/lxc-nova00.*//g' /etc/fstab
-lvresize -r -l+100%FREE /dev/lxc/root00
-EOF
-done
-
-# Logging storage setup
-for node in $(get_host_type logging); do
-ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
-umount /var/lib/nova
-echo y | lvremove  /dev/lxc/nova00 || true
-sed -i 's/^\/dev\/mapper\/lxc-nova00.*//g' /etc/fstab
-lvresize -r -l+100%FREE /dev/lxc/openstack00
-EOF
-done
-
-# swift storage setup
-for node in $(get_host_type swift); do
-ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
-umount /var/lib/nova
-echo y | lvremove  /dev/lxc/nova00 || true
-sed -i 's/^\/dev\/mapper\/lxc-nova00.*//g' /etc/fstab
-# apt-get update && apt-get -y install xfsprogs
-for disk in disk1 disk2 disk3; do
-lvcreate --name \${disk} -L 30G lxc
-mkfs.xfs /dev/lxc/\${disk}
-mkdir -p /src/\${disk}
-mount /dev/lxc/\${disk} /srv/\${disk}
-echo "/dev/mapper/lxc-\${disk} /srv/\${disk} xfs defaults 0 0" | tee -a /etc/fstab
-done
-EOF
-done
-
-# Storage storage setup
-for node in $(get_host_type storage); do
-ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
-umount /var/lib/nova
-echo y | lvremove /dev/lxc/nova00 || true
-sed -i 's/^\/dev\/mapper\/lxc-nova00.*//g' /etc/fstab
-lvcreate --name cinder -l 100%FREE lxc
-vgcreate cinder-volumes /dev/lxc/cinder
-EOF
-done
-
-# Deploy OpenStack-Ansible source code
-apt-get install -y git tmux
-pushd /opt
-  git clone https://github.com/openstack/openstack-ansible
-  cp -R openstack-ansible/etc/openstack_deploy /etc/openstack_deploy
-popd
-
-# Create the swift config
-cp templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
-
-# Create the OpenStack User Config
-HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
-sed "s/__HOSTIP__/${HOSTIP}/g" templates/openstack_user_config.yml > /etc/openstack_deploy/openstack_user_config.yml
-
-pushd /opt/openstack-ansible/
-  bash ./scripts/bootstrap-ansible.sh
-  python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
-  # This is happening so the VMs running the infra use less storage
-  echo 'lxc_container_backing_store: dir' | tee -a /etc/openstack_deploy/user_variables.yml
-  # Tempest is being configured to use a known network
-  echo 'tempest_public_subnet_cidr: 172.29.248.0/22' | tee -a /etc/openstack_deploy/user_variables.yml
-  # This makes running neutron in a distributed system easier and a lot less noisy
-  echo 'neutron_l2_population: True' | tee -a /etc/openstack_deploy/user_variables.yml
-popd
-
-pushd /opt/openstack-ansible/playbooks
-# Running the HAP play is done because it "may" be needed. Note: In Master its not.
-openstack-ansible haproxy-install.yml
-
-# Setup everything else
-openstack-ansible setup-everything.yml
-
-# This is optional and only being done to give the cloud networks and an image.
-#  The tempest install will work out of the box because the deployment is setup
-#  already with all of the correct networks, devices, and other bits. If you want
-#  to test with tempest the OSA script will work out the box. Post deployment you
-#  can test with the following: `cd /opt/openstack-ansible; ./scripts/run-tempest.sh`
-openstack-ansible os-tempest-install.yml
-popd
+DEPLOY_OSA=true
+[[ "${DEPLOY_OSA}" = true ]] && source osa-deploy.sh

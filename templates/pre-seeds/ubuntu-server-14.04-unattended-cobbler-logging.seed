@@ -181,7 +181,7 @@ d-i partman-auto/expert_recipe string \
                       label{ root }                           \
                       mountpoint{ / }                         \
               .                                               \
-              76800 1 76800 ext4                              \
+              1024 1 1000000000 ext4                          \
                       $lvmok{ } in_vg{ lxc }                  \
                       lv_name{ openstack00 }                  \
                       method{ format } format{ }              \
@@ -189,22 +189,7 @@ d-i partman-auto/expert_recipe string \
                       label{ openstack00 }                    \
                       mountpoint{ /openstack }                \
               .                                               \
-              20480 1 20480 ext4                              \
-                      $lvmok{ } in_vg{ lxc }                  \
-                      lv_name{ deleteme00 }                   \
-                      method{ format } format{ }              \
-                      use_filesystem{ } filesystem{ ext4 }    \
-                      label{ deleteme00 }                     \
-                      mountpoint{ /deleteme }                 \
-              .                                               \
-              1024 1 1000000000 ext4                          \
-                      $lvmok{ } in_vg{ lxc }                  \
-                      lv_name{ nova00 }                       \
-                      method{ format } format{ }              \
-                      use_filesystem{ } filesystem{ ext4 }    \
-                      label{ nova }                           \
-                      mountpoint{ /var/lib/nova }             \
-              .                                               \
+
 
 # This makes partman automatically partition without confirmation, provided
 # that you told it what to do using one of the methods above.
@@ -284,8 +269,9 @@ d-i preseed/late_command string \
   sed -i '/PermitRootLogin / s/ .*/ yes/' /target/etc/ssh/sshd_config; \
   mkdir /target/root/.ssh; \
   chmod 0700 /target/root/.ssh; \
-  echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys \
-  killall.sh; netcfg
+  echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys; \
+  killall.sh || true; \
+  netcfg
 
 #############
 #
