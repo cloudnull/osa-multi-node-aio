@@ -138,8 +138,8 @@ SSHKEY=$(cat /root/.ssh/id_rsa.pub)
 DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"
 
 # Template the seed files
-for seed_file in templates/pre-seeds/*.seed; do
-  cp "${seed_file}" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+for seed_file in $(ls -1 templates/pre-seeds); do
+  cp "templates/pre-seeds/${seed_file}" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
   sed -i "s/__DEVICE_NAME__/${DEVICE_NAME}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
   sed -i "s|__SSHKEY__|${SSHKEY}|g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
   sed -i "s/__DEFAULT_NETWORK__/${DEFAULT_NETWORK}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
@@ -168,9 +168,9 @@ fi
 
 # Create cobbler profile
 for seed_file in /var/lib/cobbler/kickstarts/ubuntu*14.04*.seed; do
-  if ! cobbler profile list | grep -qw "${seed_file#*'/'}"; then
+  if ! cobbler profile list | grep -qw "${seed_file##*'/'}"; then
     cobbler profile add \
-      --name "${seed_file#*'/'}" \
+      --name "${seed_file##*'/'}" \
       --distro ubuntu-14.04.4-server-x86_64 \
       --kickstart "${seed_file}"
   fi
@@ -188,25 +188,23 @@ cobbler signature update
 # Create cobbler systems
 for node_type in $(get_all_types); do
   for node in $(get_host_type ${node_type}); do
-    if ! cobbler system list | grep -qw "${node%%":"*}"; then
-      cobbler system add \
-        --name="${node%%':'*}" \
-        --profile="ubuntu-server-14.04-unattended-cobbler-${node_type}.seed" \
-        --hostname=${node%%":"*}.openstackci.local \
-        --kopts="interface=${DEFAULT_NETWORK}" \
-        --interface=${DEFAULT_NETWORK} \
-        --mac="52:54:00:bd:81:${node:(-2)}" \
-        --ip-address="10.0.0.${node#*":"}" \
-        --subnet=255.255.255.0 \
-        --gateway=10.0.0.200 \
-        --name-servers=8.8.8.8 8.8.4.4 \
-        --static=1
+    if cobbler system list | grep -qw "${node%%':'*}"; then
+      cobbler system remove --name "${node%%':'*}"
     fi
+    cobbler system add \
+      --name="${node%%':'*}" \
+      --profile="ubuntu-server-14.04-unattended-cobbler-${node_type}.seed" \
+      --hostname="${node%%":"*}.openstackci.local" \
+      --kopts="interface=${DEFAULT_NETWORK}" \
+      --interface="${DEFAULT_NETWORK}" \
+      --mac="52:54:00:bd:81:${node:(-2)}" \
+      --ip-address="10.0.0.${node#*":"}" \
+      --subnet=255.255.255.0 \
+      --gateway=10.0.0.200 \
+      --name-servers=8.8.8.8 8.8.4.4 \
+      --static=1
   done
 done
-
-# sync cobbler
-cobbler sync
 
 # Restart XinetD
 service xinetd stop
@@ -243,9 +241,6 @@ for node in $(get_all_hosts); do
 scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
 ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
 apt-get clean && apt-get update
-if ! grep "^source.*cfg$" /etc/network/interfaces; then
-  echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
-fi
 shutdown -r now
 EOF
 done

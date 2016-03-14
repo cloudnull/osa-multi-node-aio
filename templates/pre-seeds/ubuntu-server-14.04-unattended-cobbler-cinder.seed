@@ -162,17 +162,11 @@ d-i partman-auto/expert_recipe string \
                       label{ boot }                           \
                       mountpoint{ /boot }                     \
               .                                               \
-              1024 1 30% ext4                                 \
+              136192 1 100% ext4                              \
                       $primary{ }                             \
                       method{ lvm }                           \
                       device{ /dev/__DEVICE_NAME__2 }          \
                       vg_name{ lxc }                          \
-              .                                               \
-              1024 1 70% ext4                                 \
-                      $primary{ }                             \
-                      method{ lvm }                           \
-                      device{ /dev/__DEVICE_NAME__3 }          \
-                      vg_name{ cinder-volume }                \
               .                                               \
               8192 1 8192 linux-swap                          \
                       $lvmok{ } in_vg{ lxc }                  \
@@ -195,6 +189,15 @@ d-i partman-auto/expert_recipe string \
                       label{ openstack00 }                    \
                       mountpoint{ /openstack }                \
               .                                               \
+              76800 1 100% ext4                               \
+                      $lvmok{ } in_vg{ lxc }                  \
+                      lv_name{ cinder00 }                     \
+                      device{ /dev/mapper/ }                  \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      label{ openstack00 }                    \
+                      mountpoint{ /openstack }                \
+              .                                               \
+
 
 
 # This makes partman automatically partition without confirmation, provided
@@ -276,6 +279,7 @@ d-i preseed/late_command string \
   mkdir /target/root/.ssh; \
   chmod 0700 /target/root/.ssh; \
   echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys; \
+  if ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo 'source /etc/network/interfaces.d/*.cfg' >> /target/etc/network/interfaces; fi; \
   killall.sh || true; \
   netcfg
 

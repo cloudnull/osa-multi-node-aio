@@ -64,9 +64,12 @@ for node in $(get_all_hosts); do
     virsh destroy "${node_name}" || true
   done
   qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img "${VM_DISK_SIZE}G"
-  if ! virsh list --all --name | grep -q "${node%%":"*}"; then
+  VM_NAME=$(virsh list --all --name | grep "${node%%":"*}")
+  if [[ -z "${VM_NAME}" ]]; then
     virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
+    virsh create /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
+  else
+    virsh start "${VM_NAME}"
   fi
-  virsh create /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
 done
 }
