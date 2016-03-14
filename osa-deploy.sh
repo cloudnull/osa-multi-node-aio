@@ -27,7 +27,10 @@ cp templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
 HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
 sed "s/__HOSTIP__/${HOSTIP}/g" templates/openstack_user_config.yml > /etc/openstack_deploy/openstack_user_config.yml
 
+# Set the OSA branch for this script to deploy
+OSA_BRANCH=${OSA_BRANCH:-master}
 pushd /opt/openstack-ansible/
+  git checkout ${OSA_BRANCH}
   bash ./scripts/bootstrap-ansible.sh
   python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
   # This is happening so the VMs running the infra use less storage
@@ -39,6 +42,7 @@ pushd /opt/openstack-ansible/
 popd
 
 pushd /opt/openstack-ansible/playbooks
+
 # Running the HAP play is done because it "may" be needed. Note: In Master its not.
 openstack-ansible haproxy-install.yml
 

@@ -1,4 +1,11 @@
 {
+    "cinder": {
+        "cinder1": "108"
+    },
+    "compute": {
+        "compute1": "104",
+        "compute2": "105"
+    },
     "infra": {
         "infra1": "100",
         "infra2": "101",
@@ -7,15 +14,8 @@
     "logging": {
         "logging1": "103"
     },
-    "compute": {
-        "compute1": "104",
-        "compute2": "105"
-    },
     "swift": {
         "swift1": "106",
         "swift2": "107"
-    },
-    "cinder": {
-        "cinder1": "108"
     }
 }

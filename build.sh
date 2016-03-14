@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Load all functions
+source functions.sh
+
 # If you were running ssh-agent with forwarding this will clear out the keys
 #  in your cache which can cause confusion.
 killall ssh-agent; eval `ssh-agent`
@@ -69,20 +72,24 @@ iptables -w -t mangle \
             -j CHECKSUM \
             --checksum-fill
 
-# Create kvm storage pool
-DATA_DISK_DEVICE=$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')
-parted --script /dev/${DATA_DISK_DEVICE} mklabel gpt
-parted --align optimal --script /dev/${DATA_DISK_DEVICE} mkpart kvm ext4 0% 100%
-mkfs.ext4 /dev/${DATA_DISK_DEVICE}1
-if ! grep -qw "^/dev/${DATA_DISK_DEVICE}1" /etc/fstab; then
-  echo "/dev/${DATA_DISK_DEVICE}1 ${BOOTSTRAP_AIO_DIR} ext4 defaults 0 0" >> /etc/fstab
+# Enable partitioning of the "${DATA_DISK_DEVICE}"
+PARTITION_HOST=${PARTITION_HOST:-true}
+if [[ "${PARTITION_HOST}" = true ]]; then
+  # Set the data disk device, if unset the largest unpartitioned device will be used to for host VMs
+  DATA_DISK_DEVICE="${DATA_DISK_DEVICE:-$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')}"
+  parted --script /dev/${DATA_DISK_DEVICE} mklabel gpt
+  parted --align optimal --script /dev/${DATA_DISK_DEVICE} mkpart kvm ext4 0% 100%
+  mkfs.ext4 /dev/${DATA_DISK_DEVICE}1
+  if ! grep -qw "^/dev/${DATA_DISK_DEVICE}1" /etc/fstab; then
+    echo "/dev/${DATA_DISK_DEVICE}1 ${BOOTSTRAP_AIO_DIR} ext4 defaults 0 0" >> /etc/fstab
+  fi
+  mount -a
 fi
-mount -a
 
 # Install cobbler
 wget -qO - http://download.opensuse.org/repositories/home:/libertas-ict:/cobbler26/xUbuntu_14.04/Release.key | apt-key add -
 add-apt-repository "deb http://download.opensuse.org/repositories/home:/libertas-ict:/cobbler26/xUbuntu_14.04/ ./"
-apt-get update && apt-get -y install cobbler dhcp3-server debmirror isc-dhcp-server ipcalc tftpd tftp fence-agents
+apt-get update && apt-get -y install cobbler dhcp3-server debmirror isc-dhcp-server ipcalc tftpd tftp fence-agents iptables-persistent
 
 # Move Cobbler Apache config to the right place
 cp /etc/apache2/conf.d/cobbler.conf /etc/apache2/conf-available/
@@ -122,12 +129,13 @@ cp templates/dhcp.template /etc/cobbler/dhcp.template
 # Create a trusty sources file
 cp templates/trusty-sources.list /var/www/html/trusty-sources.list
 
-# This is being set because sda is on hosts, vda is kvm, xvda is xen.
-DEVICE_NAME="vda"
+# Set the default preseed device name.
+#  This is being set because sda is on hosts, vda is kvm, xvda is xen.
+DEVICE_NAME="${DEVICE_NAME:-vda}"
 # This gets the root users SSH-public-key
 SSHKEY=$(cat /root/.ssh/id_rsa.pub)
 # This is set to instruct the preseed what the default network is expected to be
-DEFAULT_NETWORK="eth0"
+DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"
 
 # Template the seed files
 for seed_file in templates/pre-seeds/*.seed; do
@@ -177,50 +185,6 @@ cobbler get-loaders
 # Update Cobbler Signatures
 cobbler signature update
 
-
-function get_host_type () {
-python <<EOL
-import json
-with open('hosts.json') as f:
-    x = json.loads(f.read())
-for k, v in x.get("$1").items():
-    print('%s:%s' % (k, v))
-EOL
-}
-
-function get_all_hosts () {
-python <<EOL
-import json
-with open('hosts.json') as f:
-    x = json.loads(f.read())
-for i in x.values():
-    for k, v in i.items():
-      print('%s:%s' % (k, v))
-EOL
-}
-
-function get_all_types () {
-python <<EOL
-import json
-with open('hosts.json') as f:
-    x = json.loads(f.read())
-for i in x.keys():
-    print(i)
-EOL
-}
-
-function wait_ssh() {
-echo "Waiting for all nodes to become available. This can take around 10 min"
-for node in $(get_all_hosts); do
-    echo "Waiting for node: ${node%%":"*} on 10.0.0.${node#*":"}"
-    ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*":"} exit > /dev/null
-    while test $? -gt 0; do
-      sleep 15
-      ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*":"} exit > /dev/null
-    done
-done
-}
-
 # Create cobbler systems
 for node_type in $(get_all_types); do
   for node in $(get_host_type ${node_type}); do
@@ -259,17 +223,17 @@ for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
 done
 
 # Create the VM root disk then define and start the VMs.
-#  !!!THIS TASK WILL DESTROY ALL OF THE ROOT DISKS IF THEY ALREADY EXIST!!!
 for node in $(get_all_hosts); do
-  qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img 252G
   cp templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
-  virsh create /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   cp templates/vmnode.openstackci.local-bridges.cfg /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
   sed -i "s/__COUNT__/${node#*":"}/g" /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
 done
+
+# Kick all of the VMs to run the cloud
+#  !!!THIS TASK WILL DESTROY ALL OF THE ROOT DISKS IF THEY ALREADY EXIST!!!
+rekick_vms
 
 # Wait here for all nodes to be booted and ready with SSH
 wait_ssh
@@ -278,6 +242,7 @@ wait_ssh
 for node in $(get_all_hosts); do
 scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
 ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
+apt-get clean && apt-get update
 if ! grep "^source.*cfg$" /etc/network/interfaces; then
   echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
 fi
@@ -288,5 +253,6 @@ done
 # Wait here for all nodes to be booted and ready with SSH
 wait_ssh
 
-DEPLOY_OSA=true
+# Instruct the system to deploy OpenStack Ansible
+DEPLOY_OSA=${DEPLOY_OSA:-true}
 [[ "${DEPLOY_OSA}" = true ]] && source osa-deploy.sh
