@@ -77,6 +77,9 @@ Enable partitioning of the "${DATA_DISK_DEVICE}":
 Set the data disk device, if unset the largest unpartitioned device will be used to for host VMs:
   ``DATA_DISK_DEVICE="${DATA_DISK_DEVICE:-$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')}"``
 
+Set the VM disk size in gigabytes:
+  VM_DISK_SIZE="${VM_DISK_SIZE:-252}"
+
 Instruct the system to deploy OpenStack Ansible:
   ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
 

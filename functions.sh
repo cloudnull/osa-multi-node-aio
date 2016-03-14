@@ -57,12 +57,16 @@ done
 }
 
 function rekick_vms() {
+# Set the VM disk size in gigabytes
+VM_DISK_SIZE="${VM_DISK_SIZE:-252}"
 for node in $(get_all_hosts); do
-  for node_uuid in $(virsh list --all --uuid); do
-    virsh destroy "${node_uuid}"
+  for node_name in $(virsh list --all --name | grep "${node%%":"*}"); do
+    virsh destroy "${node_name}" || true
   done
-  qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img 252G
-  virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
+  qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img "${VM_DISK_SIZE}G"
+  if ! virsh list --all --name | grep -q "${node%%":"*}"; then
+    virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
+  fi
   virsh create /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
 done
 }
