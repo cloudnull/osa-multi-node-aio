@@ -65,20 +65,20 @@ The cobbler and pre-seed setup has been implemented using some of the awesome wo
 Options
 -------
 
-# Set the default preseed device name. This is being set because sda is on hosts, vda is kvm, xvda is xen.
-``DEVICE_NAME="${DEVICE_NAME:-vda}"``
+Set the default preseed device name. This is being set because sda is on hosts, vda is kvm, xvda is xen:
+  ``DEVICE_NAME="${DEVICE_NAME:-vda}"``
 
-# This is set to instruct the preseed what the default network is expected to be
-``DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"``
+This is set to instruct the preseed what the default network is expected to be:
+  ``DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"``
 
-# Enable partitioning of the "${DATA_DISK_DEVICE}"
-``PARTITION_HOST=${PARTITION_HOST:-true}``
+Enable partitioning of the "${DATA_DISK_DEVICE}":
+  ``PARTITION_HOST=${PARTITION_HOST:-true}``
 
-# Set the data disk device, if unset the largest unpartitioned device will be used to for host VMs
-``DATA_DISK_DEVICE="${DATA_DISK_DEVICE:-$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')}"``
+Set the data disk device, if unset the largest unpartitioned device will be used to for host VMs:
+  ``DATA_DISK_DEVICE="${DATA_DISK_DEVICE:-$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')}"``
 
-# Instruct the system to deploy OpenStack Ansible
-``DEPLOY_OSA=${DEPLOY_OSA:-true}``
+Instruct the system to deploy OpenStack Ansible:
+  ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
 
-# Set the OSA branch for this script to deploy
-``OSA_BRANCH=${OSA_BRANCH:-master}``
+Set the OSA branch for this script to deploy:
+  ``OSA_BRANCH=${OSA_BRANCH:-master}``
