@@ -162,3 +162,11 @@ cat >> ${CONFD_FILE} <<EOF
 EOF
 done
 }
+
+function osa_user_var_add () {
+  if ! grep -q "^$1" /etc/openstack_deploy/user_variables.yml; then
+    echo "$2" | tee -a /etc/openstack_deploy/user_variables.yml
+  else
+    sed -i "s|$1.*|$2|g" /etc/openstack_deploy/user_variables.yml
+  fi
+}

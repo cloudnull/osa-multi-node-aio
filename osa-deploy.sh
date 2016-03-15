@@ -66,21 +66,16 @@ pushd /opt/openstack-ansible/
   bash ./scripts/bootstrap-ansible.sh
   python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
   # This is happening so the VMs running the infra use less storage
-  if ! grep -q "^lxc_container_backing_store" /etc/openstack_deploy/user_variables.yml; then
-    echo 'lxc_container_backing_store: dir' | tee -a /etc/openstack_deploy/user_variables.yml
-  fi
+  osa_user_var_add lxc_container_backing_store 'lxc_container_backing_store: dir'
+
   # Tempest is being configured to use a known network
-  if ! grep -q "^tempest_public_subnet_cidr" /etc/openstack_deploy/user_variables.yml; then
-    echo 'tempest_public_subnet_cidr: 172.29.248.0/22' | tee -a /etc/openstack_deploy/user_variables.yml
-  fi
+  osa_user_var_add tempest_public_subnet_cidr 'tempest_public_subnet_cidr: 172.29.248.0/22'
+
   # This makes running neutron in a distributed system easier and a lot less noisy
-  if ! grep -q "^neutron_l2_population" /etc/openstack_deploy/user_variables.yml; then
-    echo 'neutron_l2_population: True' | tee -a /etc/openstack_deploy/user_variables.yml
-  fi
+  osa_user_var_add neutron_l2_population 'neutron_l2_population: True'
+
   # This makes the glance image store use swift instead of the file backend
-  if ! grep -q "^glance_default_store" /etc/openstack_deploy/user_variables.yml; then
-    echo 'glance_default_store: swift' | tee -a /etc/openstack_deploy/user_variables.yml
-  fi
+  osa_user_var_add glance_default_store 'glance_default_store: swift'
 popd
 
 pushd /opt/openstack-ansible/playbooks
