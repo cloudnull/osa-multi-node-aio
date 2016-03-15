@@ -12,7 +12,7 @@ Full OpenStack deployment using a single OnMetal host from the
 Rackspace Public Cloud. This is a multi-node installation using
 VMs that have been PXE booted which was done to provide an environment
 that is almost exactly what is in production. This script will build, kick
-and deploy OpenStack using KVM, Cobbler, OpenStack-Ansible within 14 Nodes
+and deploy OpenStack using KVM, Cobbler, OpenStack-Ansible within 13 Nodes
 and 1 load balancer all using a Hyper Converged environment.
 
 
