@@ -33,6 +33,7 @@ cp -v templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
 
 ### =========== WRITE OF conf.d FILES =========== ###
 # Setup cinder hosts: function group_name host_type
+write_osa_general_confd storage-infra_hosts cinder
 write_osa_cinder_confd storage_hosts cinder
 
 # Setup nova hosts: function group_name host_type
@@ -41,7 +42,6 @@ write_osa_general_confd compute_hosts nova_compute
 # Setup infra hosts: function group_name host_type
 write_osa_general_confd identity_hosts infra
 write_osa_general_confd repo-infra_hosts infra
-write_osa_general_confd storage-infra_hosts infra
 write_osa_general_confd os-infra_hosts infra
 write_osa_general_confd shared-infra_hosts infra
 
@@ -51,10 +51,8 @@ write_osa_general_confd log_hosts logging
 # Setup network hosts: function group_name host_type
 write_osa_general_confd network_hosts network
 
-# Setup swift proxy hosts: function group_name host_type
+# Setup swift hosts: function group_name host_type
 write_osa_swift_proxy_confd swift-proxy_hosts swift
-
-# Setup swift storage hosts: function group_name host_type
 write_osa_swift_storage_confd swift_hosts swift
 ### =========== END WRITE OF conf.d FILES =========== ###
 

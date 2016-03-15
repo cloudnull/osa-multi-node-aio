@@ -121,7 +121,7 @@ cat >> ${CONFD_FILE} <<EOF
           volume_group: cinder-volumes
           volume_driver: cinder.volume.drivers.lvm.LVMVolumeDriver
           volume_backend_name: LVM_iSCSI
-          iscsi_ip_address: "172.29.236.108"
+          iscsi_ip_address: "172.29.236.${node#*":"}"
 EOF
 done
 }
