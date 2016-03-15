@@ -17,6 +17,10 @@ set -eu
 # Load all functions
 source functions.sh
 
+# If you were running ssh-agent with forwarding this will clear out the keys
+#  in your cache which can cause confusion.
+killall ssh-agent; eval `ssh-agent`
+
 # Create VM Basic Configuration files
 for node in $(get_all_hosts); do
   cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml

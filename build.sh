@@ -19,7 +19,6 @@ source functions.sh
 if [ ! -f "/root/.functions.rc" ];then
   # Make the rekick function part of the main general shell
   declare -f rekick_vms | tee /root/.functions.rc
-  declare -f renetwork_vms | tee -a /root/.functions.rc
   if ! grep -q 'source /root/.functions.rc' /root/.bashrc; then
     echo 'source /root/.functions.rc' | tee -a /root/.bashrc
   fi

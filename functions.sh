@@ -60,10 +60,8 @@ function wait_ssh () {
 echo "Waiting for all nodes to become available. This can take around ${1:-10} min"
 for node in $(get_all_hosts); do
     echo "Waiting for node: ${node%%":"*} on 10.0.0.${node#*":"}"
-    ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*":"} exit > /dev/null
-    while test $? -gt 0; do
+    until ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*':'} exit > /dev/null; do
       sleep 15
-      ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*":"} exit > /dev/null
     done
 done
 }
