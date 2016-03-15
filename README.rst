@@ -92,5 +92,11 @@ Functions
 
 The build process will add a function to the system to provide you a quick means to rekick a VM host. The function added
 is ``rekick_vms``. This function can be used to re-kick a specific host. To use this function use the short hostname along
-with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing 
+with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing
 it to be re-PXE booted. Once the re-deployment has completed (<=10 min) the node will have a vanilla OS.
+
+
+Adding nodes to the deployment
+------------------------------
+
+To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you can add more nodes to any of the available types without any modifications made to the templates or build script.
