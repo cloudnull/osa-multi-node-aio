@@ -85,3 +85,12 @@ Instruct the system to deploy OpenStack Ansible:
 
 Set the OSA branch for this script to deploy:
   ``OSA_BRANCH=${OSA_BRANCH:-master}``
+
+
+Functions
+---------
+
+The build process will add a function to the system to provide you a quick means to rekick a VM host. The function added
+is ``rekick_vms``. This function can be used to re-kick a specific host. To use this function use the short hostname along
+with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing 
+it to be re-PXE booted. Once the re-deployment has completed (<=10 min) the node will have a vanilla OS.
