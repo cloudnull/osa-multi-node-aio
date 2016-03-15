@@ -12,7 +12,7 @@ Full OpenStack deployment using a single OnMetal host from the
 Rackspace Public Cloud. This is a multi-node installation using
 VMs that have been PXE booted which was done to provide an environment
 that is almost exactly what is in production. This script will build, kick
-and deploy OpenStack using KVM, Cobbler, OpenStack-Ansible within 14 Nodes
+and deploy OpenStack using KVM, Cobbler, OpenStack-Ansible within 13 Nodes
 and 1 load balancer all using a Hyper Converged environment.
 
 
@@ -86,17 +86,36 @@ Instruct the system to deploy OpenStack Ansible:
 Set the OSA branch for this script to deploy:
   ``OSA_BRANCH=${OSA_BRANCH:-master}``
 
+Instruct the system to Kick all of the VMs:
+  ``KICK_VMS=${KICK_VMS:-true}``
 
-Functions
----------
+
+Re-kicking the VMs
+------------------
 
 The build process will add a function to the system to provide you a quick means to rekick a VM host. The function added
 is ``rekick_vms``. This function can be used to re-kick a specific host. To use this function use the short hostname along
 with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing
 it to be re-PXE booted. Once the re-deployment has completed (<=10 min) the node will have a vanilla OS.
 
+If you want to re-kick all known hosts you can execute the ``kick-vms.sh`` script which will do eveything needed to
+boot all new VMs paving over the existing ones.
+
 
 Adding nodes to the deployment
 ------------------------------
 
 To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you can add more nodes to any of the available types without any modifications made to the templates or build script.
+
+
+Rerunning the build script
+--------------------------
+
+The build script can be rerun at any time. If you have a successful run before and simply want to rekick everything I
+recommend nuking the running VMs and then executing the build script instructing it to NOT partition the host. This can
+be easily done using the following snippet.
+
+.. code-block:: bash
+
+    for i in $(virsh list --all --name); do virsh destroy $i; virsh undefine $i; rm /var/lib/libvirt/images/$i.img; done
+    PARTITION_HOST=false ./build.sh
