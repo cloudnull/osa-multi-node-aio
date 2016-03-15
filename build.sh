@@ -89,7 +89,7 @@ if [[ "${PARTITION_HOST}" = true ]]; then
   parted --align optimal --script /dev/${DATA_DISK_DEVICE} mkpart kvm ext4 0% 100%
   mkfs.ext4 /dev/${DATA_DISK_DEVICE}1
   if ! grep -qw "^/dev/${DATA_DISK_DEVICE}1" /etc/fstab; then
-    echo "/dev/${DATA_DISK_DEVICE}1 ${BOOTSTRAP_AIO_DIR} ext4 defaults 0 0" >> /etc/fstab
+    echo "/dev/${DATA_DISK_DEVICE}1 /var/lib/libvirt/images/ ext4 defaults 0 0" >> /etc/fstab
   fi
   mount -a
 fi
@@ -218,9 +218,11 @@ service xinetd stop
 service xinetd start
 
 # Remove the default libvirt networks
-virsh net-autostart default --disable
-virsh net-destroy default
-
+if virsh net-list |  grep -qw "default"; then
+  virsh net-autostart default --disable
+  virsh net-destroy default
+fi
+[]
 # Create the libvirt networks used for the Host VMs
 for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   if ! virsh net-list |  grep -qw "${network}"; then
