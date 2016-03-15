@@ -56,7 +56,7 @@ for i in x.keys():
 EOL
 }
 
-function wait_ssh() {
+function wait_ssh () {
 echo "Waiting for all nodes to become available. This can take around ${1:-10} min"
 for node in $(get_all_hosts); do
     echo "Waiting for node: ${node%%":"*} on 10.0.0.${node#*":"}"
@@ -68,7 +68,7 @@ for node in $(get_all_hosts); do
 done
 }
 
-function rekick_vms() {
+function rekick_vms () {
 # If you pass the short name of the host to the function it will only force rekick just the ONE host.
 # Set the VM disk size in gigabytes
 VM_DISK_SIZE="${VM_DISK_SIZE:-252}"
@@ -87,7 +87,7 @@ for node in ${1:-$(get_all_hosts)}; do
 done
 }
 
-function renetwork_vms() {
+function renetwork_vms () {
 for node in $(get_all_hosts); do
 scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
 ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update; shutdown -r now"
