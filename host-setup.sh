@@ -44,8 +44,8 @@ if ! grep "^source.*cfg$" /etc/network/interfaces; then
 fi
 
 # create kvm bridges
-cp -v templates/kvm-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
-for i in br-dhcp br-mgmt br-vlan br-storage br-vxlan; do
+cp -v templates/kvm-bonded-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
+for i in br-dhcp vm-br-eth1 vm-br-eth2 vm-br-eth3 vm-br-eth4 br-mgmt br-vlan br-storage br-vxlan; do
   ifup $i;
 done
 
