@@ -230,25 +230,9 @@ for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   fi
 done
 
-# Create VM Basic Configuration files
-for node in $(get_all_hosts); do
-  cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed "s/__COUNT__/${node#*":"}/g" templates/vmnode.openstackci.local-bridges.cfg > /var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg
-done
-
-# Kick all of the VMs to run the cloud
-#  !!!THIS TASK WILL DESTROY ALL OF THE ROOT DISKS IF THEY ALREADY EXIST!!!
-rekick_vms
-
-# Wait here for all nodes to be booted and ready with SSH
-wait_ssh
-
-# Ensure that all running VMs have an updated apt-cache
-for node in $(get_all_hosts); do
-ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
-done
+# Instruct the system to Kick all of the VMs
+KICK_VMS=${KICK_VMS:-true}
+[[ "${KICK_VMS}" = true ]] && source kick-vms.sh
 
 # Instruct the system to deploy OpenStack Ansible
 DEPLOY_OSA=${DEPLOY_OSA:-true}
