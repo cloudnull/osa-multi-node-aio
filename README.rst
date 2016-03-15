@@ -84,14 +84,23 @@ Set the data disk device, if unset the largest unpartitioned device will be used
 Set the VM disk size in gigabytes:
   ``VM_DISK_SIZE="${VM_DISK_SIZE:-252}"``
 
-Instruct the system to deploy OpenStack Ansible:
-  ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
-
 Set the OSA branch for this script to deploy:
   ``OSA_BRANCH=${OSA_BRANCH:-master}``
 
+Instruct the system to deploy OpenStack Ansible:
+  ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
+
 Instruct the system to Kick all of the VMs:
   ``KICK_VMS=${KICK_VMS:-true}``
+
+Instruct the system do all of the require host setup:
+  ``HOST_SETUP=${HOST_SETUP:-true}``
+
+Instruct the system do all of the cobbler setup:
+  ``COBBLER_SETUP=${COBBLER_SETUP:-true}``
+
+Instruct the system do all of the cobbler setup:
+  ``VIRSH_NET_SETUP=${VIRSH_NET_SETUP:-true}``
 
 
 Re-kicking the VMs

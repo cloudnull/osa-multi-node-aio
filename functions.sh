@@ -13,10 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function mkdir_check () {
+  if [ ! -d "$1" ];then
+    mkdir -p "$1"
+  fi
+}
+
 function ssh_agent_reset () {
   # If you were running ssh-agent with forwarding this will clear out the keys
   #  in your cache which can cause confusion.
-  killall ssh-agent; eval `ssh-agent`
+  if pgrep ssh-agent; then
+    killall ssh-agent; eval `ssh-agent`
+  fi
 }
 
 function iptables_general_rule_add () {
