@@ -79,6 +79,9 @@ pushd /opt/openstack-ansible/
   osa_user_var_add glance_default_store 'glance_default_store: swift'
 popd
 
+# Set the number of forks for the ansible client calls
+export ANSIBLE_FORKS=${ANSIBLE_FORKS:-25}
+
 pushd /opt/openstack-ansible/playbooks
 
 # Running the HAP play is done because it "may" be needed. Note: In Master its not.
