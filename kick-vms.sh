@@ -25,7 +25,7 @@ for node in $(get_all_hosts); do
   cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed "s/__COUNT__/${node#*":"}/g" templates/vmnode.openstackci.local-bridges.cfg > /var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg
+  sed "s/__COUNT__/${node#*":"}/g" templates/vmnode.openstackci.local-bonded-bridges.cfg > /var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg
 done
 
 # Kick all of the VMs to run the cloud
