@@ -15,6 +15,13 @@
 
 # Load all functions
 source functions.sh
+if [ ! -f "/root/.functions.rc" ];then
+  # Make the rekick function part of the main general shell
+  declare -f rekick_vms | tee /root/.functions.rc
+  if ! grep -q 'source /root/.functions.rc' /root/.bashrc; then
+    echo 'source /root/.functions.rc' | tee -a /root/.bashrc
+  fi
+fi
 
 # If you were running ssh-agent with forwarding this will clear out the keys
 #  in your cache which can cause confusion.
@@ -24,19 +31,20 @@ if [ ! -f "/root/.ssh/id_rsa" ];then
   ssh-keygen -t rsa -N ''
 fi
 
-cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+# This gets the root users SSH-public-key
+SSHKEY=$(cat /root/.ssh/id_rsa.pub)
+if ! grep -q "${SSHKEY}" /root/.ssh/authorized_keys; then
+  cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+fi
 
 apt-get update && apt-get install -y qemu-kvm libvirt-bin virtinst bridge-utils virt-manager lvm2
-
-virsh net-autostart default --disable
-virsh net-destroy default
 
 if ! grep "^source.*cfg$" /etc/network/interfaces; then
   echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
 fi
 
 # create kvm bridges
-cp templates/kvm-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
+cp -v templates/kvm-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
 for i in br-dhcp br-mgmt br-vlan br-storage br-vxlan; do
   ifup $i;
 done
@@ -92,8 +100,8 @@ add-apt-repository "deb http://download.opensuse.org/repositories/home:/libertas
 apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install cobbler dhcp3-server debmirror isc-dhcp-server ipcalc tftpd tftp fence-agents iptables-persistent
 
 # Move Cobbler Apache config to the right place
-cp /etc/apache2/conf.d/cobbler.conf /etc/apache2/conf-available/
-cp /etc/apache2/conf.d/cobbler_web.conf /etc/apache2/conf-available/
+cp -v /etc/apache2/conf.d/cobbler.conf /etc/apache2/conf-available/
+cp -v /etc/apache2/conf.d/cobbler_web.conf /etc/apache2/conf-available/
 
 # Enable the above config
 a2enconf cobbler cobbler_web
@@ -124,25 +132,24 @@ mkdir -p /tftpboot
 chown www-data /var/lib/cobbler/webui_sessions
 
 #  when templated replace \$ with $
-cp templates/dhcp.template /etc/cobbler/dhcp.template
+cp -v templates/dhcp.template /etc/cobbler/dhcp.template
 
 # Create a trusty sources file
-cp templates/trusty-sources.list /var/www/html/trusty-sources.list
+cp -v templates/trusty-sources.list /var/www/html/trusty-sources.list
 
 # Set the default preseed device name.
 #  This is being set because sda is on hosts, vda is kvm, xvda is xen.
 DEVICE_NAME="${DEVICE_NAME:-vda}"
-# This gets the root users SSH-public-key
-SSHKEY=$(cat /root/.ssh/id_rsa.pub)
+
 # This is set to instruct the preseed what the default network is expected to be
 DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"
 
 # Template the seed files
 for seed_file in $(ls -1 templates/pre-seeds); do
-  cp "templates/pre-seeds/${seed_file}" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
-  sed -i "s/__DEVICE_NAME__/${DEVICE_NAME}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  cp -v "templates/pre-seeds/${seed_file}" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  sed -i "s|__DEVICE_NAME__|${DEVICE_NAME}|g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
   sed -i "s|__SSHKEY__|${SSHKEY}|g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
-  sed -i "s/__DEFAULT_NETWORK__/${DEFAULT_NETWORK}/g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
+  sed -i "s|__DEFAULT_NETWORK__|${DEFAULT_NETWORK}|g" "/var/lib/cobbler/kickstarts/${seed_file#*'/'}"
 done
 
 # Restart services again and configure autostart
@@ -210,6 +217,10 @@ done
 service xinetd stop
 service xinetd start
 
+# Remove the default libvirt networks
+virsh net-autostart default --disable
+virsh net-destroy default
+
 # Create the libvirt networks used for the Host VMs
 for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   if ! virsh net-list |  grep -qw "${network}"; then
@@ -222,10 +233,10 @@ done
 
 # Create the VM root disk then define and start the VMs.
 for node in $(get_all_hosts); do
-  cp templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
+  cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  cp templates/vmnode.openstackci.local-bridges.cfg /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
+  cp -v templates/vmnode.openstackci.local-bridges.cfg /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
   sed -i "s/__COUNT__/${node#*":"}/g" /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
 done
 

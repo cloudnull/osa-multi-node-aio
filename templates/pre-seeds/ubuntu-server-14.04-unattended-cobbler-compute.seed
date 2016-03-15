@@ -277,9 +277,11 @@ d-i preseed/late_command string \
   mkdir /target/root/.ssh; \
   chmod 0700 /target/root/.ssh; \
   echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys; \
-  if ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo 'source /etc/network/interfaces.d/*.cfg' >> /target/etc/network/interfaces; fi; \
   killall.sh || true; \
-  netcfg
+  netcfg; \
+  echo -e '#!/bin/sh\n\nif ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo "source /etc/network/interfaces.d/*.cfg" >> /etc/network/interfaces; fi' > /target/etc/network/if-pre-up.d/multi-nic; \
+  chmod +x /target/etc/network/if-pre-up.d/multi-nic
+
 
 #############
 #

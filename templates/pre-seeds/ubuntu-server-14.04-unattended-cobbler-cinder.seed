@@ -151,6 +151,9 @@ d-i partman-auto/disk string /dev/__DEVICE_NAME__
 # for logical volumes.
 d-i partman-auto-lvm/guided_size string max
 
+# This is used to auto-confirm its OK to use a partition without an FS
+d-i partman-basicmethods/method_only boolean false
+
 d-i partman-auto/choose_recipe select custompartitioning
 d-i partman-auto/expert_recipe string \
       custompartitioning :: \
@@ -162,7 +165,7 @@ d-i partman-auto/expert_recipe string \
                       label{ boot }                           \
                       mountpoint{ /boot }                     \
               .                                               \
-              136192 1 100% ext4                              \
+              1024 1 100% ext4                                \
                       $primary{ }                             \
                       method{ lvm }                           \
                       device{ /dev/__DEVICE_NAME__2 }          \
@@ -189,13 +192,10 @@ d-i partman-auto/expert_recipe string \
                       label{ openstack00 }                    \
                       mountpoint{ /openstack }                \
               .                                               \
-              1024 1 100% ext4                                \
+              1024 1 1000000000 ext4                          \
                       $lvmok{ } in_vg{ lxc }                  \
                       lv_name{ cinder00 }                     \
-                      method{ lvm }                           \
-                      label{ cinder00 }                       \
-                      device{ /dev/mapper/lxc-cinder00 }      \
-                      vg_name{ cinder-volumes }               \
+                      method{ keep }                          \
               .                                               \
 
 
@@ -268,9 +268,6 @@ d-i grub-installer/only_debian boolean true
 #
 #############
 
-# Command Line 1: Allow root to SSH.
-# Command Line 2: Cobbler overwrites sources.list with its own repos. Put the default Ubuntu sources.list back.
-# Command Line 3: Cobbler API call to turn off netboot.
 d-i preseed/late_command string \
   wget http://$http_server/trusty-sources.list -O /target/etc/apt/sources.list; \
   wget http://$http_server/cblr/svc/op/nopxe/system/$system_name -O /dev/null; \
@@ -278,9 +275,11 @@ d-i preseed/late_command string \
   mkdir /target/root/.ssh; \
   chmod 0700 /target/root/.ssh; \
   echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys; \
-  if ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo 'source /etc/network/interfaces.d/*.cfg' >> /target/etc/network/interfaces; fi; \
+  vgcreate cinder-volumes /dev/mapper/lxc-cinder00; \
   killall.sh || true; \
-  netcfg
+  netcfg; \
+  echo -e '#!/bin/sh\n\nif ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo "source /etc/network/interfaces.d/*.cfg" >> /etc/network/interfaces; fi' > /target/etc/network/if-pre-up.d/multi-nic; \
+  chmod +x /target/etc/network/if-pre-up.d/multi-nic
 
 #############
 #

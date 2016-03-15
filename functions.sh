@@ -57,9 +57,10 @@ done
 }
 
 function rekick_vms() {
+# If you pass the short name of the host to the function it will only force rekick just the ONE host.
 # Set the VM disk size in gigabytes
 VM_DISK_SIZE="${VM_DISK_SIZE:-252}"
-for node in $(get_all_hosts); do
+for node in ${1:-$(get_all_hosts)}; do
   for node_name in $(virsh list --all --name | grep "${node%%":"*}"); do
     virsh destroy "${node_name}" || true
   done
