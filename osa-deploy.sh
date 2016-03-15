@@ -77,6 +77,10 @@ pushd /opt/openstack-ansible/
   if ! grep -q "^neutron_l2_population" /etc/openstack_deploy/user_variables.yml; then
     echo 'neutron_l2_population: True' | tee -a /etc/openstack_deploy/user_variables.yml
   fi
+  # This makes the glance image store use swift instead of the file backend
+  if ! grep -q "^glance_default_store" /etc/openstack_deploy/user_variables.yml; then
+    echo 'glance_default_store: swift' | tee -a /etc/openstack_deploy/user_variables.yml
+  fi
 popd
 
 pushd /opt/openstack-ansible/playbooks
