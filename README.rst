@@ -72,11 +72,8 @@ Options
 Set the default preseed device name. This is being set because sda is on hosts, vda is kvm, xvda is xen:
   ``DEVICE_NAME="${DEVICE_NAME:-vda}"``
 
-This is set to instruct the preseed what the default network is expected to be:
+Set to instruct the preseed what the default network is expected to be:
   ``DEFAULT_NETWORK="${DEFAULT_NETWORK:-eth0}"``
-
-Enable partitioning of the "${DATA_DISK_DEVICE}":
-  ``PARTITION_HOST=${PARTITION_HOST:-true}``
 
 Set the data disk device, if unset the largest unpartitioned device will be used to for host VMs:
   ``DATA_DISK_DEVICE="${DATA_DISK_DEVICE:-$(lsblk -brndo NAME,TYPE,FSTYPE,RO,SIZE | awk '/d[b-z]+ disk +0/{ if ($4>m){m=$4; d=$1}}; END{print d}')}"``
@@ -86,6 +83,9 @@ Set the VM disk size in gigabytes:
 
 Set the OSA branch for this script to deploy:
   ``OSA_BRANCH=${OSA_BRANCH:-master}``
+
+Enable partitioning of the "${DATA_DISK_DEVICE}":
+  ``PARTITION_HOST=${PARTITION_HOST:-true}``
 
 Instruct the system to deploy OpenStack Ansible:
   ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
@@ -111,7 +111,7 @@ is ``rekick_vms``. This function can be used to re-kick a specific host. To use 
 with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing
 it to be re-PXE booted. Once the re-deployment has completed (<=10 min) the node will have a vanilla OS.
 
-If you want to re-kick all known hosts you can execute the ``kick-vms.sh`` script which will do eveything needed to
+If you want to re-kick all known hosts you can execute the ``deploy-vms.sh`` script which will do eveything needed to
 boot all new VMs paving over the existing ones.
 
 
@@ -132,3 +132,13 @@ be easily done using the following snippet.
 
     for i in $(virsh list --all --name); do virsh destroy $i; virsh undefine $i; rm /var/lib/libvirt/images/$i.img; done
     PARTITION_HOST=false ./build.sh
+
+
+Deploying OpenStack into the environment
+----------------------------------------
+
+While the build script will deploy OpenStack, you can choose to run this manually. To run a basic deploy using a given branch you can use the following snippet.
+
+.. code-block:: bash
+
+    OSA_BRANCH=master ./deploy-osa.sh
