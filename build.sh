@@ -15,24 +15,24 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Instruct the system do all of the require host setup
-HOST_SETUP=${HOST_SETUP:-true}
-[[ "${HOST_SETUP}" = true ]] && source host-setup.sh
+SETUP_HOST=${SETUP_HOST:-true}
+[[ "${SETUP_HOST}" = true ]] && source setup-host.sh
 
 # Instruct the system do all of the cobbler setup
-COBBLER_SETUP=${COBBLER_SETUP:-true}
-[[ "${COBBLER_SETUP}" = true ]] && source cobbler-setup.sh
+SETUP_COBBLER=${SETUP_COBBLER:-true}
+[[ "${SETUP_COBBLER}" = true ]] && source setup-cobbler.sh
 
 # Instruct the system do all of the cobbler setup
-VIRSH_NET_SETUP=${VIRSH_NET_SETUP:-true}
-[[ "${VIRSH_NET_SETUP}" = true ]] && source virsh-net-setup.sh
+SETUP_VIRSH_NET=${SETUP_VIRSH_NET:-true}
+[[ "${SETUP_VIRSH_NET}" = true ]] && source setup-virsh-net.sh
 
 # Instruct the system to Kick all of the VMs
-KICK_VMS=${KICK_VMS:-true}
-[[ "${KICK_VMS}" = true ]] && source kick-vms.sh
+DEPLOY_VMS=${DEPLOY_VMS:-true}
+[[ "${DEPLOY_VMS}" = true ]] && source deploy-vms.sh
 
 # Instruct the system to deploy OpenStack Ansible
 DEPLOY_OSA=${DEPLOY_OSA:-true}
-[[ "${DEPLOY_OSA}" = true ]] && source osa-deploy.sh
+[[ "${DEPLOY_OSA}" = true ]] && source deploy-osa.sh

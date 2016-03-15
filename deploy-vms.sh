@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Reset the ssh-agent service to remove potential key issues
 ssh_agent_reset

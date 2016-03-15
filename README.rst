@@ -91,16 +91,16 @@ Instruct the system to deploy OpenStack Ansible:
   ``DEPLOY_OSA=${DEPLOY_OSA:-true}``
 
 Instruct the system to Kick all of the VMs:
-  ``KICK_VMS=${KICK_VMS:-true}``
+  ``DEPLOY_VMS=${DEPLOY_VMS:-true}``
 
 Instruct the system do all of the require host setup:
-  ``HOST_SETUP=${HOST_SETUP:-true}``
+  ``SETUP_HOST=${SETUP_HOST:-true}``
 
 Instruct the system do all of the cobbler setup:
-  ``COBBLER_SETUP=${COBBLER_SETUP:-true}``
+  ``SETUP_COBBLER=${SETUP_COBBLER:-true}``
 
-Instruct the system do all of the cobbler setup:
-  ``VIRSH_NET_SETUP=${VIRSH_NET_SETUP:-true}``
+Instruct the system do all of the virsh network setup:
+  ``SETUP_VIRSH_NET=${SETUP_VIRSH_NET:-true}``
 
 
 Re-kicking the VMs

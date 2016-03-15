@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Remove the default libvirt networks
 if virsh net-list |  grep -qw "default"; then

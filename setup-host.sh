@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Make the rekick function part of the main general shell
 declare -f rekick_vms | tee /root/.functions.rc
@@ -45,8 +45,8 @@ fi
 
 # create kvm bridges
 cp -v templates/kvm-bonded-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
-for i in br-dhcp vm-br-eth1 vm-br-eth2 vm-br-eth3 vm-br-eth4 br-mgmt br-vlan br-storage br-vxlan; do
-  ifup $i;
+for i in $(awk '/iface/ {print $2}' /etc/network/interfaces.d/kvm-bridges.cfg); do
+  ifup $i
 done
 
 # Set the forward rule
