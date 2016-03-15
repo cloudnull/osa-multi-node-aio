@@ -75,6 +75,13 @@ for node in ${1:-$(get_all_hosts)}; do
 done
 }
 
+function renetwork_vms() {
+for node in $(get_all_hosts); do
+scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
+ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update; shutdown -r now"
+done
+}
+
 function write_osa_general_confd () {
 CONFD_FILE="/etc/openstack_deploy/conf.d/${1}.yml"
 echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}

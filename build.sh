@@ -50,7 +50,9 @@ for i in br-dhcp br-mgmt br-vlan br-storage br-vxlan; do
 done
 
 # Set the forward rule
-sysctl -w net.ipv4.ip_forward=1 | tee -a /etc/sysctl.conf
+if ! grep -q '^net.ipv4.ip_forward' /etc/sysctl.conf; then
+  sysctl -w net.ipv4.ip_forward=1 | tee -a /etc/sysctl.conf
+fi
 
 # Add rules from the INPUT chain
 iptables -w -I INPUT -i "br-dhcp" -p udp --dport 67 -j ACCEPT
@@ -196,8 +198,10 @@ cobbler signature update
 for node_type in $(get_all_types); do
   for node in $(get_host_type ${node_type}); do
     if cobbler system list | grep -qw "${node%%':'*}"; then
+      echo "removing node ${node%%':'*} from the cobbler system"
       cobbler system remove --name "${node%%':'*}"
     fi
+    echo "adding node ${node%%':'*} from the cobbler system"
     cobbler system add \
       --name="${node%%':'*}" \
       --profile="ubuntu-server-14.04-unattended-cobbler-${node_type}.seed" \
@@ -250,10 +254,7 @@ rekick_vms
 wait_ssh
 
 # Do the basic host setup for all nodes
-for node in $(get_all_hosts); do
-scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
-ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update; shutdown -r now"
-done
+renetwork_vms
 
 # Wait here for all nodes to be booted and ready with SSH
 wait_ssh 2
