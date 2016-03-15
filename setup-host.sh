@@ -37,7 +37,8 @@ if ! grep -q "${SSHKEY}" /root/.ssh/authorized_keys; then
   cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 fi
 
-apt-get update && apt-get install -y qemu-kvm libvirt-bin virtinst bridge-utils virt-manager lvm2
+# Install bsaic packages known to be needed
+apt-get update && apt-get install -y bridge-utils ifenslave libvirt-bin lvm2 openssh-server python2.7 qemu-kvm vim virtinst virt-manager vlan
 
 if ! grep "^source.*cfg$" /etc/network/interfaces; then
   echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
