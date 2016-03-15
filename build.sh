@@ -232,8 +232,7 @@ for node in $(get_all_hosts); do
   cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  cp -v templates/vmnode.openstackci.local-bridges.cfg /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
-  sed -i "s/__COUNT__/${node#*":"}/g" /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg
+  sed "s/__COUNT__/${node#*":"}/g" templates/vmnode.openstackci.local-bridges.cfg > /var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg
 done
 
 # Kick all of the VMs to run the cloud
@@ -243,11 +242,10 @@ rekick_vms
 # Wait here for all nodes to be booted and ready with SSH
 wait_ssh
 
-# Do the basic host setup for all nodes
-renetwork_vms
-
-# Wait here for all nodes to be booted and ready with SSH
-wait_ssh 2
+# Ensure that all running VMs have an updated apt-cache
+for node in $(get_all_hosts); do
+ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
+done
 
 # Instruct the system to deploy OpenStack Ansible
 DEPLOY_OSA=${DEPLOY_OSA:-true}

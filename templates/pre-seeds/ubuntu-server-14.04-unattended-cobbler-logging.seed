@@ -210,7 +210,7 @@ tasksel tasksel/first multiselect openssh-server
 # Whether to upgrade packages after debootstrap.
 # Allowed values: none, safe-upgrade, full-upgrade
 d-i pkgsel/upgrade select none
-d-i pkgsel/include string openssh-server bridge-utils vim python2.7
+d-i pkgsel/include string bridge-utils ifenslave lvm2 openssh-server python2.7 vim vlan
 # Policy for applying updates. May be "none" (no automatic updates),
 # "unattended-upgrades" (install security updates automatically), or
 # "landscape" (manage system with Landscape).
@@ -265,6 +265,7 @@ d-i grub-installer/only_debian boolean true
 # Command Line 3: Cobbler API call to turn off netboot.
 d-i preseed/late_command string \
   wget http://$http_server/trusty-sources.list -O /target/etc/apt/sources.list; \
+  wget http://$http_server/osa-$hostname-bridges.cfg -O /etc/network/interfaces.d/osa-$hostname-bridges.cfg; \
   wget http://$http_server/cblr/svc/op/nopxe/system/$system_name -O /dev/null; \
   sed -i '/PermitRootLogin / s/ .*/ yes/' /target/etc/ssh/sshd_config; \
   mkdir /target/root/.ssh; \
