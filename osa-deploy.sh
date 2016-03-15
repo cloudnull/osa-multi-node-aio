@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Load all functions
+source functions.sh
+
 # Deploy OpenStack-Ansible source code
 apt-get install -y git tmux
 pushd /opt
@@ -20,12 +23,41 @@ pushd /opt
   cp -R openstack-ansible/etc/openstack_deploy /etc/openstack_deploy
 popd
 
-# Create the swift config
-cp templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
-
 # Create the OpenStack User Config
 HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
 sed "s/__HOSTIP__/${HOSTIP}/g" templates/openstack_user_config.yml > /etc/openstack_deploy/openstack_user_config.yml
+
+
+## =========== WRITE OF conf.d FILES =========== ##
+# Setup cinder hosts: function group_name host_type
+write_osa_cinder_confd storage_hosts cinder
+
+# Setup nova hosts: function group_name host_type
+write_osa_general_confd compute_hosts nova_compute
+
+# Setup infra hosts: function group_name host_type
+write_osa_general_confd identity_hosts infra
+write_osa_general_confd repo-infra_hosts infra
+write_osa_general_confd storage-infra_hosts infra
+write_osa_general_confd os-infra_hosts infra
+write_osa_general_confd shared-infra_hosts infra
+
+# Setup logging hosts: function group_name host_type
+write_osa_general_confd log_hosts logging
+
+# Setup network hosts: function group_name host_type
+write_osa_general_confd network_hosts network
+
+# Setup swift proxy hosts: function group_name host_type
+write_osa_swift_proxy_confd swift-proxy_hosts swift
+
+# Setup swift storage hosts: function group_name host_type
+write_osa_swift_storage_confd swift_hosts swift
+## =========== END WRITE OF conf.d FILES =========== ##
+
+
+# Create the swift config: function group_name host_type
+cp templates/osa-swift.yml /etc/openstack_deploy/conf.d/swift.yml
 
 # Set the OSA branch for this script to deploy
 OSA_BRANCH=${OSA_BRANCH:-master}

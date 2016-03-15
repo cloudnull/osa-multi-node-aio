@@ -222,7 +222,7 @@ if virsh net-list |  grep -qw "default"; then
   virsh net-autostart default --disable
   virsh net-destroy default
 fi
-[]
+
 # Create the libvirt networks used for the Host VMs
 for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   if ! virsh net-list |  grep -qw "${network}"; then
@@ -252,14 +252,11 @@ wait_ssh
 # Do the basic host setup for all nodes
 for node in $(get_all_hosts); do
 scp -o StrictHostKeyChecking=no /opt/osa-${node%%":"*}.openstackci.local-bridges.cfg 10.0.0.${node#*":"}:/etc/network/interfaces.d/osa-${node%%":"*}.openstackci.local-bridges.cfg
-ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} <<EOF
-apt-get clean && apt-get update
-shutdown -r now
-EOF
+ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update; shutdown -r now"
 done
 
 # Wait here for all nodes to be booted and ready with SSH
-wait_ssh
+wait_ssh 2
 
 # Instruct the system to deploy OpenStack Ansible
 DEPLOY_OSA=${DEPLOY_OSA:-true}

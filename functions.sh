@@ -45,7 +45,7 @@ EOL
 }
 
 function wait_ssh() {
-echo "Waiting for all nodes to become available. This can take around 10 min"
+echo "Waiting for all nodes to become available. This can take around ${1:-10} min"
 for node in $(get_all_hosts); do
     echo "Waiting for node: ${node%%":"*} on 10.0.0.${node#*":"}"
     ssh -q -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 10.0.0.${node#*":"} exit > /dev/null
@@ -72,5 +72,74 @@ for node in ${1:-$(get_all_hosts)}; do
   else
     virsh start "${VM_NAME}"
   fi
+done
+}
+
+function write_osa_general_confd () {
+CONFD_FILE="/etc/openstack_deploy/conf.d/${1}.yml"
+echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}
+echo "---" >> ${CONFD_FILE}
+echo "$1:" >> ${CONFD_FILE}
+for node in $(get_host_type ${2}); do
+echo "  ${node%%':'*}:" >> ${CONFD_FILE}
+echo "    ip: 172.29.236.${node#*":"}" >> ${CONFD_FILE}
+done
+}
+
+function write_osa_cinder_confd () {
+CONFD_FILE="/etc/openstack_deploy/conf.d/${1}.yml"
+echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}
+echo "---" >> ${CONFD_FILE}
+echo "$1:" >> ${CONFD_FILE}
+for node in $(get_host_type ${2}); do
+echo "  ${node%%':'*}:" >> ${CONFD_FILE}
+echo "    ip: 172.29.236.${node#*":"}" >> ${CONFD_FILE}
+cat >> ${CONFD_FILE} <<EOF
+    container_vars:
+      cinder_backends:
+        limit_container_types: cinder_volume
+        lvm:
+          volume_group: cinder-volumes
+          volume_driver: cinder.volume.drivers.lvm.LVMVolumeDriver
+          volume_backend_name: LVM_iSCSI
+          iscsi_ip_address: "172.29.236.108"
+EOF
+done
+}
+
+function write_osa_swift_proxy_confd () {
+CONFD_FILE="/etc/openstack_deploy/conf.d/${1}.yml"
+echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}
+echo "---" >> ${CONFD_FILE}
+echo "$1:" >> ${CONFD_FILE}
+for node in $(get_host_type ${2}); do
+echo "  ${node%%':'*}:" >> ${CONFD_FILE}
+echo "    ip: 172.29.236.${node#*":"}" >> ${CONFD_FILE}
+cat >> ${CONFD_FILE} <<EOF
+    container_vars:
+      swift_proxy_vars:
+        limit_container_types: swift_proxy
+        read_affinity: "r1=100"
+        write_affinity: "r1"
+        write_affinity_node_count: "1 * replicas"
+EOF
+done
+}
+
+function write_osa_swift_storage_confd () {
+CONFD_FILE="/etc/openstack_deploy/conf.d/${1}.yml"
+echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}
+echo "---" >> ${CONFD_FILE}
+echo "$1:" >> ${CONFD_FILE}
+for node in $(get_host_type ${2}); do
+echo "  ${node%%':'*}:" >> ${CONFD_FILE}
+echo "    ip: 172.29.236.${node#*":"}" >> ${CONFD_FILE}
+cat >> ${CONFD_FILE} <<EOF
+    container_vars:
+      swift_vars:
+        limit_container_types: swift
+        zone: 0
+        region: 1
+EOF
 done
 }
