@@ -37,10 +37,10 @@ d-i debian-installer/add-kernel-opts string $kernel_options_post
 #end if
 
 d-i netcfg/choose_interface select __DEFAULT_NETWORK__
+d-i netcfg/dhcp_timeout string 60
 d-i netcfg/disable_autoconfig boolean true
 d-i netcfg/dhcp_failed note
 d-i netcfg/dhcp_options select Configure network manually
-d-i netcfg/dhcp_timeout string 60
 
 #if $static
 # Static network configuration.
