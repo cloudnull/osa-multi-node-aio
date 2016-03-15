@@ -173,15 +173,7 @@ d-i partman-auto/expert_recipe string \
                       lv_name{ swap00 }                       \
                       method{ swap } format{ }                \
               .                                               \
-              51200 1 51200 ext4                              \
-                      $lvmok{ } in_vg{ lxc }                  \
-                      lv_name{ root00 }                       \
-                      method{ format } format{ }              \
-                      use_filesystem{ } filesystem{ ext4 }    \
-                      label{ root }                           \
-                      mountpoint{ / }                         \
-              .                                               \
-              76800 1 76800 ext4                              \
+              153600 1 153600 ext4                            \
                       $lvmok{ } in_vg{ lxc }                  \
                       lv_name{ openstack00 }                  \
                       method{ format } format{ }              \
@@ -189,21 +181,13 @@ d-i partman-auto/expert_recipe string \
                       label{ openstack00 }                    \
                       mountpoint{ /openstack }                \
               .                                               \
-              20480 1 20480 ext4                              \
-                      $lvmok{ } in_vg{ lxc }                  \
-                      lv_name{ deleteme00 }                   \
-                      method{ format } format{ }              \
-                      use_filesystem{ } filesystem{ ext4 }    \
-                      label{ deleteme00 }                     \
-                      mountpoint{ /deleteme }                 \
-              .                                               \
               1024 1 1000000000 ext4                          \
                       $lvmok{ } in_vg{ lxc }                  \
-                      lv_name{ nova00 }                       \
+                      lv_name{ root00 }                       \
                       method{ format } format{ }              \
                       use_filesystem{ } filesystem{ ext4 }    \
-                      label{ nova }                           \
-                      mountpoint{ /var/lib/nova }             \
+                      label{ root }                           \
+                      mountpoint{ / }                         \
               .                                               \
 
 # This makes partman automatically partition without confirmation, provided
@@ -284,8 +268,12 @@ d-i preseed/late_command string \
   sed -i '/PermitRootLogin / s/ .*/ yes/' /target/etc/ssh/sshd_config; \
   mkdir /target/root/.ssh; \
   chmod 0700 /target/root/.ssh; \
-  echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys \
-  killall.sh; netcfg
+  echo "__SSHKEY__" >> /target/root/.ssh/authorized_keys; \
+  killall.sh || true; \
+  netcfg; \
+  echo -e '#!/bin/sh\n\nif ! grep -q "^source.*cfg$" /etc/network/interfaces; then echo "source /etc/network/interfaces.d/*.cfg" >> /etc/network/interfaces; fi' > /target/etc/network/if-pre-up.d/multi-nic; \
+  chmod +x /target/etc/network/if-pre-up.d/multi-nic
+
 
 #############
 #
