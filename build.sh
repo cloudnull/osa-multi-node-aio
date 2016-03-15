@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eu
 # Copyright [2016] [Kevin Carter]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +19,7 @@ source functions.sh
 if [ ! -f "/root/.functions.rc" ];then
   # Make the rekick function part of the main general shell
   declare -f rekick_vms | tee /root/.functions.rc
+  declare -f renetwork_vms | tee -a /root/.functions.rc
   if ! grep -q 'source /root/.functions.rc' /root/.bashrc; then
     echo 'source /root/.functions.rc' | tee -a /root/.bashrc
   fi
@@ -55,32 +57,20 @@ if ! grep -q '^net.ipv4.ip_forward' /etc/sysctl.conf; then
 fi
 
 # Add rules from the INPUT chain
-iptables -w -I INPUT -i "br-dhcp" -p udp --dport 67 -j ACCEPT
-iptables -w -I INPUT -i "br-dhcp" -p tcp --dport 67 -j ACCEPT
-iptables -w -I INPUT -i "br-dhcp" -p udp --dport 53 -j ACCEPT
-iptables -w -I INPUT -i "br-dhcp" -p tcp --dport 53 -j ACCEPT
+iptables_general_rule_add 'INPUT -i br-dhcp -p udp --dport 67 -j ACCEPT'
+iptables_general_rule_add 'INPUT -i br-dhcp -p tcp --dport 67 -j ACCEPT'
+iptables_general_rule_add 'INPUT -i br-dhcp -p udp --dport 53 -j ACCEPT'
+iptables_general_rule_add 'INPUT -i br-dhcp -p tcp --dport 53 -j ACCEPT'
 
 # Add rules from the FORWARDING chain
-iptables -w -I FORWARD -i "br-dhcp" -j ACCEPT
-iptables -w -I FORWARD -o "br-dhcp" -j ACCEPT
+iptables_general_rule_add 'FORWARD -i br-dhcp -j ACCEPT'
+iptables_general_rule_add 'FORWARD -o br-dhcp -j ACCEPT'
 
 # Add rules from the nat POSTROUTING chain
-iptables -w -t nat \
-            -A POSTROUTING \
-            -s "10.0.0.0/24" ! \
-            -d "10.0.0.0/24" \
-            -j MASQUERADE
+iptables_filter_rule_add nat 'POSTROUTING -s 10.0.0.0/24 ! -d 10.0.0.0/24 -j MASQUERADE'
 
 # Add rules from the mangle POSTROUTING chain
-iptables -w -t mangle \
-            -A POSTROUTING \
-            -s "10.0.0.0/24" \
-            -o "br-dhcp" \
-            -p udp \
-            -m udp \
-            --dport 68 \
-            -j CHECKSUM \
-            --checksum-fill
+iptables_filter_rule_add mangle 'POSTROUTING -s 10.0.0.0/24 -o br-dhcp -p udp -m udp --dport 68 -j CHECKSUM --checksum-fill'
 
 # Enable partitioning of the "${DATA_DISK_DEVICE}"
 PARTITION_HOST=${PARTITION_HOST:-true}
@@ -101,17 +91,6 @@ wget -qO - http://download.opensuse.org/repositories/home:/libertas-ict:/cobbler
 add-apt-repository "deb http://download.opensuse.org/repositories/home:/libertas-ict:/cobbler26/xUbuntu_14.04/ ./"
 apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install cobbler dhcp3-server debmirror isc-dhcp-server ipcalc tftpd tftp fence-agents iptables-persistent
 
-# Move Cobbler Apache config to the right place
-cp -v /etc/apache2/conf.d/cobbler.conf /etc/apache2/conf-available/
-cp -v /etc/apache2/conf.d/cobbler_web.conf /etc/apache2/conf-available/
-
-# Enable the above config
-a2enconf cobbler cobbler_web
-
-# Enable Proxy modules
-a2enmod proxy
-a2enmod proxy_http
-
 # Basic cobbler setup
 sed -i 's/^manage_dhcp\:.*/manage_dhcp\: 1/g' /etc/cobbler/settings
 sed -i 's/^restart_dhcp\:.*/restart_dhcp\: 1/g' /etc/cobbler/settings
@@ -120,11 +99,22 @@ sed -i 's/^server\:.*/server\: 10.0.0.200/g' /etc/cobbler/settings
 sed -i 's/^http_port\:.*/http_port\: 5150/g' /etc/cobbler/settings
 sed -i 's/^INTERFACES.*/INTERFACES="br-dhcp"/g' /etc/default/isc-dhcp-server
 
+# Move Cobbler Apache config to the right place
+cp -v /etc/apache2/conf.d/cobbler.conf /etc/apache2/conf-available/
+cp -v /etc/apache2/conf.d/cobbler_web.conf /etc/apache2/conf-available/
+
 # Fix Apache conf to match 2.4 configuration
-sed -i "/Order allow,deny/d" /etc/apache2/conf-enabled/cobbler*.conf
-sed -i "s/Allow from all/Require all granted/g" /etc/apache2/conf-enabled/cobbler*.conf
+sed -i "/Order allow,deny/d" /etc/apache2/conf-available/cobbler*.conf
+sed -i "s/Allow from all/Require all granted/g" /etc/apache2/conf-available/cobbler*.conf
 sed -i "s/^Listen 80/Listen 5150/g" /etc/apache2/ports.conf
 sed -i "s/\:80/\:5150/g" /etc/apache2/sites-available/000-default.conf
+
+# Enable the above config
+a2enconf cobbler cobbler_web
+
+# Enable Proxy modules
+a2enmod proxy
+a2enmod proxy_http
 
 # Fix TFTP server arguments in cobbler template to enable it to work on Ubuntu
 sed -i "s/server_args .*/server_args             = -s \$args/" /etc/cobbler/tftpd.template
@@ -237,7 +227,7 @@ for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
   fi
 done
 
-# Create the VM root disk then define and start the VMs.
+# Create VM Basic Configuration files
 for node in $(get_all_hosts); do
   cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
   sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml

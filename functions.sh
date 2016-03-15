@@ -13,6 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function iptables_general_rule_add () {
+if ! iptables -w -C $1;then
+  iptables -w -I $1
+fi
+}
+
+function iptables_filter_rule_add () {
+if ! iptables -w -t $1 -C $2;then
+  iptables -w -t $1 -I $2
+fi
+}
+
 function get_host_type () {
 python <<EOL
 import json
@@ -65,7 +77,7 @@ for node in ${1:-$(get_all_hosts)}; do
     virsh destroy "${node_name}" || true
   done
   qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img "${VM_DISK_SIZE}G"
-  VM_NAME=$(virsh list --all --name | grep "${node%%":"*}")
+  VM_NAME=$(virsh list --all --name | grep "${node%%":"*}" || echo "")
   if [[ -z "${VM_NAME}" ]]; then
     virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
     virsh create /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true
