@@ -16,17 +16,16 @@ set -eu
 
 # Load all functions
 source functions.sh
-if [ ! -f "/root/.functions.rc" ];then
-  # Make the rekick function part of the main general shell
-  declare -f rekick_vms | tee /root/.functions.rc
-  if ! grep -q 'source /root/.functions.rc' /root/.bashrc; then
-    echo 'source /root/.functions.rc' | tee -a /root/.bashrc
-  fi
+
+# Make the rekick function part of the main general shell
+declare -f rekick_vms | tee /root/.functions.rc
+declare -f ssh_agent_reset | tee -a /root/.functions.rc
+if ! grep -q 'source /root/.functions.rc' /root/.bashrc; then
+  echo 'source /root/.functions.rc' | tee -a /root/.bashrc
 fi
 
-# If you were running ssh-agent with forwarding this will clear out the keys
-#  in your cache which can cause confusion.
-killall ssh-agent; eval `ssh-agent`
+# Reset the ssh-agent service to remove potential key issues
+ssh_agent_reset
 
 if [ ! -f "/root/.ssh/id_rsa" ];then
   ssh-keygen -t rsa -N ''

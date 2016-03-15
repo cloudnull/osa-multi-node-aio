@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function ssh_agent_reset () {
+  # If you were running ssh-agent with forwarding this will clear out the keys
+  #  in your cache which can cause confusion.
+  killall ssh-agent; eval `ssh-agent`
+}
+
 function iptables_general_rule_add () {
 if ! iptables -w -C $1;then
   iptables -w -I $1

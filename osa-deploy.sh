@@ -16,9 +16,8 @@
 # Load all functions
 source functions.sh
 
-# If you were running ssh-agent with forwarding this will clear out the keys
-#  in your cache which can cause confusion.
-killall ssh-agent; eval `ssh-agent`
+# Reset the ssh-agent service to remove potential key issues
+ssh_agent_reset
 
 # Deploy OpenStack-Ansible source code
 apt-get install -y git tmux

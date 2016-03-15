@@ -17,9 +17,8 @@ set -eu
 # Load all functions
 source functions.sh
 
-# If you were running ssh-agent with forwarding this will clear out the keys
-#  in your cache which can cause confusion.
-killall ssh-agent; eval `ssh-agent`
+# Reset the ssh-agent service to remove potential key issues
+ssh_agent_reset
 
 # Create VM Basic Configuration files
 for node in $(get_all_hosts); do
@@ -38,5 +37,5 @@ wait_ssh
 
 # Ensure that all running VMs have an updated apt-cache
 for node in $(get_all_hosts); do
-ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
+  ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
 done
