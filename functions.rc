@@ -88,7 +88,16 @@ for node in ${1:-$(get_all_hosts)}; do
   for node_name in $(virsh list --all --name | grep "${node%%":"*}"); do
     virsh destroy "${node_name}" || true
   done
-  qemu-img create -f qcow2 /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img "${VM_DISK_SIZE}G"
+  # Instruct the system to run the image create.
+  #  If you have the option ``VM_IMAGE_CREATE=true`` the system will reformat the disk image
+  #  destroying anything that was it image previously.
+  VM_IMAGE_CREATE=${VM_IMAGE_CREATE:-true}
+  if [[ "${VM_IMAGE_CREATE}" = true ]]; then
+    qemu-img create -f qcow2 \
+                    -o preallocation=metadata,compat=1.1,lazy_refcounts=on \
+                    /var/lib/libvirt/images/${node%%":"*}.openstackci.local.img \
+                    "${VM_DISK_SIZE}G"
+  fi
   VM_NAME=$(virsh list --all --name | grep "${node%%":"*}" || echo "")
   if [[ -z "${VM_NAME}" ]]; then
     virsh define /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml || true

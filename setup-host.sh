@@ -71,8 +71,14 @@ iptables_general_rule_add 'FORWARD -o br-dhcp -j ACCEPT'
 # Add rules from the nat POSTROUTING chain
 iptables_filter_rule_add nat 'POSTROUTING -s 10.0.0.0/24 ! -d 10.0.0.0/24 -j MASQUERADE'
 
+# To provide internet connectivity to instances
+iptables_filter_rule_add nat "POSTROUTING -o $(ip route get 1 | awk '/dev/ {print $5}') -j MASQUERADE"
+
 # Add rules from the mangle POSTROUTING chain
 iptables_filter_rule_add mangle 'POSTROUTING -s 10.0.0.0/24 -o br-dhcp -p udp -m udp --dport 68 -j CHECKSUM --checksum-fill'
+
+# To ensure ssh checksum are always correct
+iptables_filter_rule_add mangle 'POSTROUTING -p tcp --dport 22 -j CHECKSUM --checksum-fill'
 
 # Enable partitioning of the "${DATA_DISK_DEVICE}"
 PARTITION_HOST=${PARTITION_HOST:-true}

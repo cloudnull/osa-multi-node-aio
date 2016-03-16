@@ -21,23 +21,37 @@ Process
 
 Create at least one physical host that has public network access and is running the
 Ubuntu 14.04 LTS (Trusty Tahr) Operating system. This script assumes that you have
-an unpartitioned device with at least 1TB of storage. If youre using the Rackspace
+an unpartitioned device with at least 1TB of storage. If you're using the Rackspace
 OnMetal servers the drive partitioning will be done for you by detecting the largest
 unpartitioned device. If you're doing the deployment on something other than a Rackspace
 OnMetal server you may need to modify the ``setup-host.sh`` script to do the needful in
 your environment. If you know the device name you want to format you can also set the
 ``${DATA_DISK_DEVICE}`` variable accordingly.
 
-When your ready, run the build script by executing ``bash ./build.sh``.
-The build script current executes a deployment of OpenStack Ansible using the master
-branch. If you want to do something other than deploy master you can set the ``${OSA_BRANCH}``
-variable to any branch, tag, or sha.
+Physical disk partitioning can be skipped by setting ``PARTITION_HOST=false``. If you set
+this, make sure you have enough space available to run all of the infrastructure VMs within
+``/var/lib/libvirt/images``.
+
+===========    ========   ============
+Physical Host Specs known to work well
+--------------------------------------
+ CPU CORES      MEMORY     DISK SPACE
+===========    ========   ============
+    20           124GB       1.3TB
+===========    ========   ============
+
+These specs are covered by the Rackspace OnMetal-IO v1/2 Servers.
+
+When your ready, run the build script by executing ``bash ./build.sh``. The build script
+current executes a deployment of OpenStack Ansible using the master branch. If you want to
+do something other than deploy master you can set the ``${OSA_BRANCH}`` variable to any
+branch, tag, or SHA.
 
 
 Post Deployment
 ---------------
 
-Once deployed you can use virt-manager to manage the KVM instances on the host, similar to a drac or ilo.
+Once deployed you can use virt-manager to manage the KVM instances on the host, similar to a DRAC or ILO.
 
 LINUX:
     If you're running a linux system as your workstation simply install virt-manager
@@ -72,13 +86,13 @@ Console Access
     :align: center
 
 The root password for all VMs is "**cobbler**". This password is being set within the pre-seed files under the
-"Users and Password" section. If you want to change this password please edit the preseed files.
+"Users and Password" section. If you want to change this password please edit the pre-seed files.
 
 
 Notes
 -----
 
-The cobbler and pre-seed setup has been implemented using some of the awesome work originally created by James Thorne
+The cobbler and pre-seed setup has been implemented using some of the awesome work originally created by James Thorne.
   * cobbler installation post - https://thornelabs.net/2015/11/26/install-and-configure-cobbler-on-ubuntu-1404.html
   * pre-seeds -- https://github.com/jameswthorne/preseeds-rpc
 
@@ -110,6 +124,9 @@ Instruct the system to deploy OpenStack Ansible:
 Instruct the system to Kick all of the VMs:
   ``DEPLOY_VMS=${DEPLOY_VMS:-true}``
 
+Instruct the system to run VM disk image create:
+  ``VM_IMAGE_CREATE=${VM_IMAGE_CREATE:-true}``
+
 Instruct the system do all of the require host setup:
   ``SETUP_HOST=${SETUP_HOST:-true}``
 
@@ -123,19 +140,19 @@ Instruct the system do all of the virsh network setup:
 Re-kicking the VMs
 ------------------
 
-The build process will add a function to the system to provide you a quick means to rekick a VM host. The function added
+The build process will add a function to the system to provide you a quick means to re-kick a VM host. The function added
 is ``rekick_vms``. This function can be used to re-kick a specific host. To use this function use the short hostname along
 with the function. EXAMPLE: ``rekick_vms infra1``. This command will destroy the root disk for the VM and reboot it causing
 it to be re-PXE booted. Once the re-deployment has completed (<=10 min) the node will have a vanilla OS.
 
-If you want to re-kick all known hosts you can execute the ``deploy-vms.sh`` script which will do eveything needed to
+If you want to re-kick all known hosts you can execute the ``deploy-vms.sh`` script which will do everything needed to
 boot all new VMs paving over the existing ones.
 
 
 Adding nodes to the deployment
 ------------------------------
 
-To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you 
+To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you
 can add more nodes to any of the available types without any modifications made to the templates or build script. The first
 100 IP address of all used CIDRs have been reserved in the ``openstack_user_config.yml`` and can be used when adding
 additional hosts to the environment.
@@ -144,7 +161,7 @@ additional hosts to the environment.
 Rerunning the build script
 --------------------------
 
-The build script can be rerun at any time. If you have a successful run before and simply want to rekick everything I
+The build script can be rerun at any time. If you have a successful run before and simply want to re-kick everything I
 recommend nuking the running VMs and then executing the build script instructing it to NOT partition the host. This can
 be easily done using the following snippet.
 
