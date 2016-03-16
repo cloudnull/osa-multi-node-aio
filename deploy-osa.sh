@@ -19,12 +19,23 @@ source functions.rc
 # Reset the ssh-agent service to remove potential key issues
 ssh_agent_reset
 
-# Deploy OpenStack-Ansible source code
+# Install git and tmux for use within the OSA deploy
 apt-get install -y git tmux
-pushd /opt
-  git clone https://github.com/openstack/openstack-ansible || true
+
+# Clone the OSA source code
+git clone https://github.com/openstack/openstack-ansible /opt/openstack-ansible || true
+
+pushd /opt/openstack-ansible/
+  # Fetch all current refs
+  git fetch --all
+
+  # Checkout the OpenStack-Ansible branch
+  git checkout "${OSA_BRANCH:-master}"
+
+  # Copy the etc files into place
   cp -vR openstack-ansible/etc/openstack_deploy /etc/openstack_deploy
 popd
+
 
 # Create the OpenStack User Config
 HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
@@ -60,15 +71,7 @@ write_osa_swift_storage_confd swift_hosts swift
 ### =========== END WRITE OF conf.d FILES =========== ###
 
 
-# Set the OSA branch for this script to deploy
-OSA_BRANCH=${OSA_BRANCH:-master}
 pushd /opt/openstack-ansible/
-  # Fetch all current refs
-  git fetch --all
-
-  # Checkout the OpenStack-Ansible branch
-  git checkout ${OSA_BRANCH}
-
   # Bootstrap ansible into the environment
   bash ./scripts/bootstrap-ansible.sh
 
@@ -89,7 +92,7 @@ pushd /opt/openstack-ansible/
 popd
 
 # Set the number of forks for the ansible client calls
-export ANSIBLE_FORKS=${ANSIBLE_FORKS:-25}
+export ANSIBLE_FORKS=${ANSIBLE_FORKS:-15}
 
 pushd /opt/openstack-ansible/playbooks
 
@@ -106,3 +109,4 @@ openstack-ansible setup-everything.yml
 #  can test with the following: `cd /opt/openstack-ansible; ./scripts/run-tempest.sh`
 openstack-ansible os-tempest-install.yml
 popd
+
