@@ -135,7 +135,10 @@ boot all new VMs paving over the existing ones.
 Adding nodes to the deployment
 ------------------------------
 
-To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you can add more nodes to any of the available types without any modifications made to the templates or build script.
+To add nodes to the deployment simply add the node entries to the hosts.json file. The file divides nodes by type and you 
+can add more nodes to any of the available types without any modifications made to the templates or build script. The first
+100 IP address of all used CIDRs have been reserved in the ``openstack_user_config.yml`` and can be used when adding
+additional hosts to the environment.
 
 
 Rerunning the build script
