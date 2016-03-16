@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Install cobbler
 wget -qO - http://download.opensuse.org/repositories/home:/libertas-ict:/cobbler26/xUbuntu_14.04/Release.key | apt-key add -

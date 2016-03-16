@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Make the rekick function part of the main general shell
 declare -f rekick_vms | tee /root/.functions.rc
@@ -37,17 +37,21 @@ if ! grep -q "${SSHKEY}" /root/.ssh/authorized_keys; then
   cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 fi
 
-apt-get update && apt-get install -y qemu-kvm libvirt-bin virtinst bridge-utils virt-manager lvm2
+# Install basic packages known to be needed
+apt-get update && apt-get install -y bridge-utils ifenslave libvirt-bin lvm2 openssh-server python2.7 qemu-kvm vim virtinst virt-manager vlan
 
 if ! grep "^source.*cfg$" /etc/network/interfaces; then
   echo 'source /etc/network/interfaces.d/*.cfg' | tee -a /etc/network/interfaces
 fi
 
 # create kvm bridges
-cp -v templates/kvm-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
-for i in br-dhcp br-mgmt br-vlan br-storage br-vxlan; do
-  ifup $i;
+cp -v templates/kvm-bonded-bridges.cfg /etc/network/interfaces.d/kvm-bridges.cfg
+for i in $(awk '/iface/ {print $2}' /etc/network/interfaces.d/kvm-bridges.cfg); do
+  ifup $i
 done
+
+# Clean up stale NTP processes. This is because of BUG https://bugs.launchpad.net/ubuntu/+source/ntp/+bug/1125726
+pkill lockfile-create || true
 
 # Set the forward rule
 if ! grep -q '^net.ipv4.ip_forward' /etc/sysctl.conf; then

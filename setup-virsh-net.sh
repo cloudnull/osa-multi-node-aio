@@ -15,7 +15,7 @@ set -eu
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Remove the default libvirt networks
 if virsh net-list |  grep -qw "default"; then
@@ -24,7 +24,7 @@ if virsh net-list |  grep -qw "default"; then
 fi
 
 # Create the libvirt networks used for the Host VMs
-for network in br-dhcp br-mgmt br-vxlan br-storage br-vlan; do
+for network in br-dhcp vm-br-eth1 vm-br-eth2 vm-br-eth3 vm-br-eth4; do
   if ! virsh net-list |  grep -qw "${network}"; then
     sed "s/__NETWORK__/${network}/g" templates/libvirt-network.xml > /etc/libvirt/qemu/networks/${network}.xml
     virsh net-define --file /etc/libvirt/qemu/networks/${network}.xml

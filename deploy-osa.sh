@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Load all functions
-source functions.sh
+source functions.rc
 
 # Reset the ssh-agent service to remove potential key issues
 ssh_agent_reset
@@ -63,9 +63,18 @@ write_osa_swift_storage_confd swift_hosts swift
 # Set the OSA branch for this script to deploy
 OSA_BRANCH=${OSA_BRANCH:-master}
 pushd /opt/openstack-ansible/
+  # Fetch all current refs
+  git fetch --all
+
+  # Checkout the OpenStack-Ansible branch
   git checkout ${OSA_BRANCH}
+
+  # Bootstrap ansible into the environment
   bash ./scripts/bootstrap-ansible.sh
+
+  # Generate the passwords for the environment
   python ./scripts/pw-token-gen.py --file /etc/openstack_deploy/user_secrets.yml
+
   # This is happening so the VMs running the infra use less storage
   osa_user_var_add lxc_container_backing_store 'lxc_container_backing_store: dir'
 
