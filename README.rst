@@ -52,6 +52,12 @@ WINDOWS:
     https://virt-manager.org/download/
 
 
+.. image:: virt-manager-screenshot.jpeg
+   :scale: 50 %
+   :alt: Screen shot of virt-manager and deployment in action
+   :align: center
+
+
 The root password for all VMs is "**cobbler**". This password is being set within the pre-seed files under the
 "Users and Password" section. If you want to change this password please edit the preseed files.
 
