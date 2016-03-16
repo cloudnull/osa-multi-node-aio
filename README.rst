@@ -19,20 +19,19 @@ and 1 load balancer all using a Hyper Converged environment.
 Process
 -------
 
-Once you create your server,
-
 Create at least one physical host that has public network access and is running the
 Ubuntu 14.04 LTS (Trusty Tahr) Operating system. This script assumes that you have
 an unpartitioned device with at least 1TB of storage. If youre using the Rackspace
 OnMetal servers the drive partitioning will be done for you by detecting the largest
 unpartitioned device. If you're doing the deployment on something other than a Rackspace
-OnMetal server you may need to modify the ``build.sh`` script to do the needful in your
-environment.
+OnMetal server you may need to modify the ``setup-host.sh`` script to do the needful in
+your environment. If you know the device name you want to format you can also set the
+``${DATA_DISK_DEVICE}`` variable accordingly.
 
-When your ready to build run the ``build.sh`` script by executing ``bash ./build.sh``.
+When your ready, run the build script by executing ``bash ./build.sh``.
 The build script current executes a deployment of OpenStack Ansible using the master
-branch. If you want to do something other than deploy master edit the bottom of the
-script to suit your purposes.
+branch. If you want to do something other than deploy master you can set the ``${OSA_BRANCH}``
+variable to any branch, tag, or sha.
 
 
 Post Deployment
@@ -61,7 +60,6 @@ Notes
 -----
 
 The cobbler and pre-seed setup has been implemented using some of the awesome work originally created by James Thorne
-
   * cobbler installation post - https://thornelabs.net/2015/11/26/install-and-configure-cobbler-on-ubuntu-1404.html
   * pre-seeds -- https://github.com/jameswthorne/preseeds-rpc
 
