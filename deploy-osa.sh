@@ -33,7 +33,7 @@ pushd /opt/openstack-ansible/
   git checkout "${OSA_BRANCH:-master}"
 
   # Copy the etc files into place
-  cp -vR etc/openstack_deploy /etc/openstack_deploy
+  cp -vR etc/openstack_deploy /etc/openstack_deploy/
 popd
 
 
