@@ -25,6 +25,9 @@ apt-get install -y git tmux
 # Clone the OSA source code
 git clone https://github.com/openstack/openstack-ansible /opt/openstack-ansible || true
 
+# Ensure the "/etc/openstack_deploy" exists
+mkdir_check "/etc/openstack_deploy"
+
 pushd /opt/openstack-ansible/
   # Fetch all current refs
   git fetch --all
@@ -33,7 +36,7 @@ pushd /opt/openstack-ansible/
   git checkout "${OSA_BRANCH:-master}"
 
   # Copy the etc files into place
-  cp -vR etc/openstack_deploy /etc/openstack_deploy/
+  cp -vR etc/openstack_deploy/* /etc/openstack_deploy/
 popd
 
 
