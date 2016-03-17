@@ -179,3 +179,27 @@ While the build script will deploy OpenStack, you can choose to run this manuall
 .. code-block:: bash
 
     OSA_BRANCH=master ./deploy-osa.sh
+
+
+Snapshotting an environment before major testing
+------------------------------------------------
+
+Running a snapshot on all of the vms before doing major testing is wise as it'll give you a restore point without having to re-kick
+the cloud. You can do this using some basic ``virsh`` commands and a little bash.
+
+.. code-block:: bash
+
+    for instance in $(virsh list --all --name); do
+      virsh snapshot-create-as --atomic --name $instance-kilo-snap --description "saved kilo state before liberty upgrade" $instance
+    done
+
+
+Once the previous command is complete you'll have a collection of snapshots within all of your infrastructure hosts. These snapshots
+can be used to restore state to a previous point if needed. To restore the infrastructure hosts to a previous point,
+using your snapshots, you can execute a simple ``virsh`` command or the following bash loop to restore everything to a known point.
+
+.. code-block:: bash
+
+    for instance in $(virsh list --all --name); do
+      virsh snapshot-revert --snapshotname $instance-kilo-snap --running $instance
+    done
