@@ -78,7 +78,7 @@ iptables_filter_rule_add nat "POSTROUTING -o $(ip route get 1 | awk '/dev/ {prin
 iptables_filter_rule_add mangle 'POSTROUTING -s 10.0.0.0/24 -o br-dhcp -p udp -m udp --dport 68 -j CHECKSUM --checksum-fill'
 
 # To ensure ssh checksum are always correct
-iptables_filter_rule_add mangle 'POSTROUTING -p tcp --dport 22 -j CHECKSUM --checksum-fill'
+iptables_filter_rule_add mangle 'POSTROUTING -p tcp -j CHECKSUM --checksum-fill'
 
 # Enable partitioning of the "${DATA_DISK_DEVICE}"
 PARTITION_HOST=${PARTITION_HOST:-true}

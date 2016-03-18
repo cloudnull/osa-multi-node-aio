@@ -184,3 +184,14 @@ function osa_user_var_add () {
     sed -i "s|$1.*|$2|g" /etc/openstack_deploy/user_variables.yml
   fi
 }
+
+function ansible_static_inventory () {
+CONFD_FILE="$1"
+echo "## DO NOT WRITE TO THIS FILE, CHANGES WILL BE LOST!" > ${CONFD_FILE}
+for node_type in $(get_all_types); do
+  echo "[${node_type}]" >> ${CONFD_FILE}
+  for node in $(get_host_type ${node_type}); do
+    echo "10.0.0.${node#*":"}" >> ${CONFD_FILE}
+  done
+done
+}

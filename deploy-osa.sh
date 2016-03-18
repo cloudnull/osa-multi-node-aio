@@ -39,6 +39,8 @@ pushd /opt/openstack-ansible/
   cp -vR etc/openstack_deploy/* /etc/openstack_deploy/
 popd
 
+# Create a secondary static inventory for hosts
+ansible_static_inventory "/opt/ansible-static-inventory.ini"
 
 # Create the OpenStack User Config
 HOSTIP="$(ip route get 1 | awk '{print $NF;exit}')"
