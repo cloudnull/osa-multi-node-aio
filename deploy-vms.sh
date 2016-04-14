@@ -20,12 +20,25 @@ source functions.rc
 # Reset the ssh-agent service to remove potential key issues
 ssh_agent_reset
 
+# Set the default preseed device name.
+#  This is being set because sda is on hosts, vda is kvm, xvda is xen.
+DEVICE_NAME="${DEVICE_NAME:-vda}"
+
 # Create VM Basic Configuration files
-for node in $(get_all_hosts); do
-  cp -v templates/vmnode.openstackci.local.xml /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed -i "s/__NODE__/${node%%":"*}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed -i "s/__COUNT__/${node:(-2)}/g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
-  sed "s/__COUNT__/${node#*":"}/g" templates/vmnode.openstackci.local-bonded-bridges.cfg > /var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg
+for node_type in $(get_all_types); do
+  for node in $(get_host_type ${node_type}); do
+    cp -v "templates/vmnode-config/${node_type}.openstackci.local.xml" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
+    sed -i "s|__NODE__|${node%%":"*}|g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
+    sed -i "s|__COUNT__|${node:(-2)}|g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
+    sed -i "s|__DEVICE_NAME__|${DEVICE_NAME}|g" /etc/libvirt/qemu/${node%%":"*}.openstackci.local.xml
+  done
+done
+
+# Populate network configurations based on node type
+for node_type in $(get_all_types); do
+  for node in $(get_host_type ${node_type}); do
+    sed "s/__COUNT__/${node#*":"}/g" "templates/network-interfaces/vm.openstackci.local-bonded-bridges.cfg" > "/var/www/html/osa-${node%%":"*}.openstackci.local-bridges.cfg"
+  done
 done
 
 # Kick all of the VMs to run the cloud
