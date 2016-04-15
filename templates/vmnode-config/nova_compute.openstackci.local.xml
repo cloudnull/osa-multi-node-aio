@@ -1,7 +1,7 @@
 <domain type='kvm'>
   <name>__NODE__.openstackci.local</name>
   <memory unit='GiB'>24</memory>
-  <currentMemory unit='GiB'>2</currentMemory>
+  <currentMemory unit='GiB'>8</currentMemory>
   <vcpu placement='static'>8</vcpu>
   <resource>
     <partition>/machine</partition>
