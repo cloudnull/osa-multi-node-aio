@@ -17,6 +17,20 @@ set -eu
 # Load all functions
 source functions.rc
 
+# Instruct the system to deploy OpenStack Ansible or RPC
+DEPLOY_OSA=${DEPLOY_OSA:-yes}
+DEPLOY_RPC=${DEPLOY_RPC:-no}
+
+if [ "${DEPLOY_OSA}" = "yes" ]  && [ "{DEPLOY_RPC}" = "yes" ]; then
+  echo "DEPLOY_OSA and DEPLOY_RPC can't both be 'yes'"
+  exit 1
+fi
+
+if [ "${DEPLOY_OSA}" = "no" ]  && [ "{DEPLOY_RPC}" = "no" ]; then
+  echo "DEPLOY_OSA and DEPLOY_RPC can't both be 'no'"
+  exit 1
+fi
+
 # Instruct the system do all of the require host setup
 SETUP_HOST=${SETUP_HOST:-true}
 [[ "${SETUP_HOST}" = true ]] && source setup-host.sh
@@ -33,6 +47,8 @@ SETUP_VIRSH_NET=${SETUP_VIRSH_NET:-true}
 DEPLOY_VMS=${DEPLOY_VMS:-true}
 [[ "${DEPLOY_VMS}" = true ]] && source deploy-vms.sh
 
-# Instruct the system to deploy OpenStack Ansible
-DEPLOY_OSA=${DEPLOY_OSA:-true}
-[[ "${DEPLOY_OSA}" = true ]] && source deploy-osa.sh
+if [ "${DEPLOY_OSA}" = true ]; then
+    source deploy-osa.sh
+elif [ "${DEPLOY_RPC}" = true ]; then
+    source deploy-rpc.sh
+fi

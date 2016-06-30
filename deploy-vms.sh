@@ -50,5 +50,5 @@ wait_ssh
 
 # Ensure that all running VMs have an updated apt-cache
 for node in $(get_all_hosts); do
-  ssh -q -n -f -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
+  ssh -q -o StrictHostKeyChecking=no 10.0.0.${node#*":"} "apt-get clean && apt-get update"
 done
