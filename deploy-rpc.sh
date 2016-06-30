@@ -25,7 +25,7 @@ ssh_agent_reset
 apt-get install -y git tmux
 
 # Clone the RPC source code
-git clone ${RPC_REPO} /opt/rpc-openstack || true
+git clone --recursive ${RPC_REPO} /opt/rpc-openstack || true
 
 # Ensure the "/etc/openstack_deploy" exists
 mkdir_check "/etc/openstack_deploy"
