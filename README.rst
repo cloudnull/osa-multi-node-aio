@@ -5,6 +5,12 @@ OpenStack-Ansible Multi-Node AIO
 :category: \*openstack, \*nix
 
 
+**This repo is no longer active. Active development has moved to [ https://github.com/openstack/openstack-ansible-ops/tree/master/multi-node-aio ].**
+
+
+----
+
+
 About this repository
 ---------------------
 
